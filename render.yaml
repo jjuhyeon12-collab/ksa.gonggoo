@@ -1,0 +1,28 @@
+# Render 배포 설정 (Blueprint)
+# Render 대시보드에서 New > Blueprint 로 이 저장소를 연결하면
+# 아래 데이터베이스와 웹 서비스가 자동으로 생성됩니다.
+
+databases:
+  - name: gonggoo-db
+    plan: free
+
+services:
+  - type: web
+    name: gonggoo
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT gonggoo.asgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gonggoo-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      # Render에 3.12.7이 없다고 빌드가 실패하면 이 값을 조정하세요 (예: 3.12)
+      - key: PYTHON_VERSION
+        value: "3.12.7"

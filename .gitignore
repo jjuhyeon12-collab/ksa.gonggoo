@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Django
+*.sqlite3
+backend/staticfiles/
+backend/media/
+
+# 환경 / 비밀
+.env
+backend/.env
+
+# 가상환경
+venv/
+backend/venv/
+
+# 로컬 도구
+.claude/
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

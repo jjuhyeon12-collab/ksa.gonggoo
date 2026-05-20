@@ -1,0 +1,1005 @@
+{% verbatim %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GongGoo — KSA 공동구매</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface2: #f0f0f2;
+  --border: #e2e2e6;
+  --accent: #ff6b35;
+  --accent2: #e8a800;
+  --text: #1a1a1f;
+  --text2: #6b6b75;
+  --text3: #a0a0aa;
+  --success: #00a86b;
+  --danger: #e03258;
+  --radius: 12px;
+  --mono: 'Space Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+  --shadow: 0 2px 10px rgba(0,0,0,0.06);
+  --shadow-hover: 0 6px 24px rgba(0,0,0,0.11);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.9); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border); padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: -1px; }
+.logo span { color: var(--text3); font-weight: 400; font-size: 13px; margin-left: 8px; vertical-align: middle; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-user { font-size: 13px; color: var(--text2); background: var(--surface2); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); }
+.nav-user strong { color: var(--text); }
+
+button { font-family: var(--sans); cursor: pointer; border: none; outline: none; transition: all .15s; }
+.btn-primary { background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; padding: 10px 20px; border-radius: 8px; }
+.btn-primary:hover { background: #ff8255; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255,107,53,.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 6px; }
+.btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); font-size: 13px; padding: 7px 12px; border-radius: 6px; }
+.btn-ghost:hover { background: var(--border); }
+
+main { flex: 1; max-width: 960px; margin: 0 auto; width: 100%; padding: 32px 24px; }
+
+.hero {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px 32px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  box-shadow: var(--shadow);
+}
+.hero-text h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.hero-text p { color: var(--text2); font-size: 14px; }
+.hero-stats { display: flex; gap: 28px; }
+.stat { text-align: center; }
+.stat-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ── 필터 패널 ── */
+.filter-panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 20px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-label {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .7px; min-width: 52px;
+}
+.search-wrap { margin-left: auto; }
+input[type=text], input[type=password], input[type=date] {
+  font-family: var(--sans); background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); font-size: 14px; padding: 7px 14px; border-radius: 8px; outline: none; width: 200px; transition: border-color .15s;
+}
+input[type=text]:focus, input[type=password]:focus, input[type=date]:focus { border-color: var(--accent); background: #fff; }
+input::placeholder { color: var(--text3); }
+
+.tab {
+  font-family: var(--sans); background: var(--surface2); color: var(--text2);
+  font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 20px;
+  border: 1.5px solid transparent; cursor: pointer; transition: all .14s; user-select: none;
+}
+.tab:hover { border-color: rgba(255,107,53,.4); color: var(--accent); }
+.tab.active { background: rgba(255,107,53,.1); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+
+/* ── 카드 ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; cursor: pointer; transition: all .2s;
+  display: flex; flex-direction: column; box-shadow: var(--shadow);
+}
+.card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.card-img {
+  height: 108px; background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; border-bottom: 1px solid var(--border);
+}
+.card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.tag {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.tag-배송비 { background: rgba(255,107,53,.1); color: #c94010; }
+.tag-묶음 { background: rgba(232,168,0,.12); color: #8a5800; }
+.tag-완료 { background: rgba(0,168,107,.1); color: #007048; }
+.tag-모집중 { background: rgba(60,60,200,.08); color: #2828a0; }
+.tag-joined { background: rgba(232,168,0,.1); color: #8a5800; }
+.tag-cat { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.card-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+.card-desc { font-size: 13px; color: var(--text2); line-height: 1.5; flex: 1; }
+.progress-wrap { display: flex; flex-direction: column; gap: 5px; }
+.progress-bar { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width .5s cubic-bezier(.4,0,.2,1); }
+.progress-fill.done { background: var(--success); }
+.progress-meta { display: flex; justify-content: space-between; font-size: 12px; }
+.progress-meta .current { color: var(--accent); font-weight: 700; font-family: var(--mono); }
+.progress-meta .current.done { color: var(--success); }
+.progress-meta .goal { color: var(--text3); }
+.card-footer {
+  padding: 11px 16px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--text3);
+}
+.card-author { display: flex; align-items: center; gap: 6px; }
+.avatar {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+
+/* ── 모달 ── */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-bg.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+  transform: translateY(16px); transition: transform .2s;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+}
+.modal-bg.open .modal { transform: translateY(0); }
+.modal-header { padding: 24px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; }
+.modal-header h2 { font-size: 18px; font-weight: 700; }
+.modal-close {
+  background: var(--surface2); color: var(--text2); width: 32px; height: 32px; border-radius: 8px;
+  font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.modal-close:hover { background: var(--border); }
+.modal-body { padding: 20px 28px 28px; }
+
+.detail-img {
+  height: 130px; background: var(--surface2); border-radius: 10px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: center; font-size: 56px; border: 1px solid var(--border);
+}
+.detail-label { font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+.detail-value { font-size: 14px; color: var(--text); margin-bottom: 16px; }
+.big-progress { margin: 20px 0; }
+.big-bar { height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--border); }
+.big-fill { height: 100%; border-radius: 5px; background: var(--accent); transition: width .6s; }
+.big-fill.done { background: var(--success); }
+.big-numbers { display: flex; justify-content: space-between; align-items: baseline; }
+.big-current { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--accent); }
+.big-current.done { color: var(--success); }
+.big-goal { font-size: 13px; color: var(--text3); }
+.join-section { display: flex; gap: 10px; margin-top: 20px; }
+.join-section input[type=number] {
+  font-family: var(--mono); flex: 1; font-size: 15px;
+  background: var(--surface2); border: 1.5px solid var(--border); color: var(--text);
+  padding: 10px 14px; border-radius: 8px; outline: none;
+}
+.join-section input:focus { border-color: var(--accent); background: #fff; }
+.joined-info {
+  background: rgba(0,168,107,.07); border: 1.5px solid rgba(0,168,107,.2);
+  border-radius: 8px; padding: 12px 16px; margin-top: 16px;
+  font-weight: 700; font-size: 14px; color: var(--success);
+}
+.cancel-btn {
+  width: 100%; margin-top: 10px; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 700;
+  background: rgba(224,50,88,.07); color: var(--danger);
+  border: 1.5px solid rgba(224,50,88,.2); cursor: pointer; transition: all .15s;
+}
+.cancel-btn:hover { background: rgba(224,50,88,.14); border-color: var(--danger); }
+.matched-banner {
+  background: rgba(0,168,107,.06); border: 1.5px solid rgba(0,168,107,.18);
+  border-radius: 10px; padding: 14px 18px; margin-top: 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.matched-icon { font-size: 26px; }
+.matched-text strong { color: var(--success); display: block; font-size: 15px; margin-bottom: 2px; }
+.matched-text p { font-size: 13px; color: var(--text2); }
+.participants-list { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+.participant-row {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface2); border-radius: 8px; padding: 9px 13px;
+  font-size: 13px; border: 1px solid var(--border);
+}
+.participant-name { font-weight: 500; }
+.participant-amount { font-family: var(--mono); color: var(--accent); font-weight: 700; }
+
+/* ── 폼 ── */
+.form-group { margin-bottom: 18px; }
+.form-label { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; display: block; }
+.form-label span { color: var(--accent); }
+.form-input {
+  font-family: var(--sans); width: 100%; font-size: 14px;
+  background: var(--surface2); border: 1.5px solid var(--border); color: var(--text);
+  padding: 11px 14px; border-radius: 8px; outline: none; display: block; transition: all .15s;
+}
+.form-input:focus { border-color: var(--accent); background: #fff; }
+.form-input::placeholder { color: var(--text3); }
+textarea.form-input { resize: vertical; min-height: 90px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.type-btn {
+  padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+  background: var(--surface2); color: var(--text2);
+  border: 2px solid var(--border); text-align: center; cursor: pointer; transition: all .15s;
+}
+.type-btn:hover { border-color: #aaa; }
+.type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,107,53,.07); }
+.emoji-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.emoji-opt {
+  font-size: 24px; width: 44px; height: 44px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 2px solid transparent; cursor: pointer; transition: all .15s;
+}
+.emoji-opt:hover { background: var(--border); }
+.emoji-opt.selected { border-color: var(--accent); background: rgba(255,107,53,.08); }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--surface); border: 1.5px solid var(--border); color: var(--text);
+  font-size: 14px; font-weight: 500; padding: 12px 18px; border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12); animation: slideIn .25s ease; max-width: 300px;
+}
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ── 로그인 오버레이 ── */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 400; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.login-overlay.hidden { display: none; }
+.login-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+  width: 100%; max-width: 380px; padding: 34px 30px; box-shadow: var(--shadow-hover);
+}
+.login-card .logo { font-size: 30px; display: block; text-align: center; }
+.login-sub { text-align: center; color: var(--text2); font-size: 13px; margin: 6px 0 24px; }
+.login-card .form-input { margin-bottom: 12px; }
+.login-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.login-tab {
+  flex: 1; padding: 9px; text-align: center; border-radius: 8px; cursor: pointer;
+  font-weight: 700; font-size: 14px; background: var(--surface2); color: var(--text2);
+  border: 1.5px solid var(--border); transition: all .14s;
+}
+.login-tab.active { background: rgba(255,107,53,.1); color: var(--accent); border-color: var(--accent); }
+.login-hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 14px; }
+
+@media (max-width: 620px) {
+  .hero { flex-direction: column; }
+  .hero-stats { justify-content: space-around; width: 100%; }
+  .form-row { grid-template-columns: 1fr; }
+  main { padding: 20px 16px; }
+  .search-wrap { width: 100%; }
+  input[type=text] { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- 로그인 / 회원가입 오버레이 -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div class="logo">GongGoo</div>
+    <div class="login-sub">KSA 학생 공동구매 플랫폼</div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="lt-login" onclick="switchAuth('login')">로그인</div>
+      <div class="login-tab" id="lt-register" onclick="switchAuth('register')">회원가입</div>
+    </div>
+    <div id="auth-login">
+      <input type="text" class="form-input" id="login-email" placeholder="학교 이메일 (@ksa.hs.kr)">
+      <input type="password" class="form-input" id="login-password" placeholder="비밀번호">
+      <button class="btn-primary" style="width:100%;padding:12px;margin-top:6px" onclick="handleLogin()">로그인</button>
+    </div>
+    <div id="auth-register" style="display:none">
+      <input type="text" class="form-input" id="reg-email" placeholder="학교 이메일 (@ksa.hs.kr)">
+      <input type="text" class="form-input" id="reg-name" placeholder="이름">
+      <input type="text" class="form-input" id="reg-student-id" placeholder="학번 (예: 25-105)">
+      <input type="password" class="form-input" id="reg-password" placeholder="비밀번호 (8자 이상)">
+      <button class="btn-primary" style="width:100%;padding:12px;margin-top:6px" onclick="handleRegister()">회원가입</button>
+    </div>
+    <div class="login-hint">학교 이메일(@ksa.hs.kr)을 가진 KSA 학생만 이용할 수 있어요.</div>
+  </div>
+</div>
+
+<div class="app">
+
+<nav>
+  <div class="logo">GongGoo<span>KSA 공동구매</span></div>
+  <div class="nav-right">
+    <div class="nav-user" id="nav-user">로딩 중...</div>
+    <button class="btn-primary btn-sm" onclick="openCreate()">+ 공구 올리기</button>
+    <button class="btn-ghost" onclick="logout()">로그아웃</button>
+  </div>
+</nav>
+
+<main>
+  <div class="hero">
+    <div class="hero-text">
+      <h1>같이 사면 싸다 🛍️</h1>
+      <p>배송비 아깝지 않게, 묶음도 나눠서 — KSA 학생만 이용 가능</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">전체</div></div>
+      <div class="stat"><div class="stat-num" id="stat-active">0</div><div class="stat-label">모집중</div></div>
+      <div class="stat"><div class="stat-num" id="stat-done">0</div><div class="stat-label">완료</div></div>
+    </div>
+  </div>
+
+  <div class="filter-panel">
+    <div class="filter-row">
+      <span class="filter-label">상태</span>
+      <button class="tab active" data-status="배송비" onclick="toggleStatus('배송비',this)">🚚 배송비</button>
+      <button class="tab active" data-status="묶음" onclick="toggleStatus('묶음',this)">📦 묶음</button>
+      <button class="tab active" data-status="모집중" onclick="toggleStatus('모집중',this)">🟢 모집중</button>
+      <button class="tab active" data-status="완료" onclick="toggleStatus('완료',this)">✅ 완료</button>
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="검색..." oninput="renderCards()">
+      </div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">종류</span>
+      <button class="tab active" id="cat-전체" onclick="toggleCategory('전체',this)">전체</button>
+      <button class="tab" id="cat-택시" onclick="toggleCategory('택시',this)">🚕 택시</button>
+      <button class="tab" id="cat-해외직구" onclick="toggleCategory('해외직구',this)">✈️ 해외직구</button>
+      <button class="tab" id="cat-정기결제" onclick="toggleCategory('정기결제',this)">🔄 정기결제</button>
+      <button class="tab" id="cat-식품" onclick="toggleCategory('식품',this)">🍜 식품</button>
+      <button class="tab" id="cat-생활용품" onclick="toggleCategory('생활용품',this)">🧴 생활용품</button>
+      <button class="tab" id="cat-도서" onclick="toggleCategory('도서',this)">📚 도서</button>
+      <button class="tab" id="cat-디지털" onclick="toggleCategory('디지털',this)">💻 디지털</button>
+      <button class="tab" id="cat-기타" onclick="toggleCategory('기타',this)">📦 기타</button>
+    </div>
+  </div>
+
+  <div class="grid" id="card-grid"></div>
+</main>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-bg" id="detail-modal" onclick="closeModal(event,'detail-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="dm-title"></h2>
+      <button class="modal-close" onclick="closeModalById('detail-modal')">×</button>
+    </div>
+    <div class="modal-body" id="dm-body"></div>
+  </div>
+</div>
+
+<!-- 작성 모달 -->
+<div class="modal-bg" id="create-modal" onclick="closeModal(event,'create-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>공구 올리기</h2>
+      <button class="modal-close" onclick="closeModalById('create-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">이모지 <span>*</span></label>
+        <div class="emoji-picker" id="emoji-picker"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">제목 <span>*</span></label>
+        <input type="text" class="form-input" id="f-title" placeholder="예: 아이패드 케이블 공동구매">
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <textarea class="form-input" id="f-desc" placeholder="어떤 물건인지, 링크 등 자유롭게 적어주세요"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">종류 <span>*</span></label>
+        <select class="form-input" id="f-category">
+          <option value="식품">🍜 식품</option>
+          <option value="생활용품">🧴 생활용품</option>
+          <option value="도서">📚 도서</option>
+          <option value="디지털">💻 디지털</option>
+          <option value="택시">🚕 택시 합승</option>
+          <option value="해외직구">✈️ 해외 직구</option>
+          <option value="정기결제">🔄 정기결제</option>
+          <option value="기타">📦 기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">공구 유형 <span>*</span></label>
+        <div class="type-toggle">
+          <div class="type-btn active" id="type-배송비" onclick="setType('배송비')">
+            🚚 배송비 모으기<br><small style="font-weight:400;color:var(--text3)">최소 금액 이상이면 매칭</small>
+          </div>
+          <div class="type-btn" id="type-묶음" onclick="setType('묶음')">
+            📦 묶음 나누기<br><small style="font-weight:400;color:var(--text3)">정확한 개수가 맞아야 매칭</small>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0">
+          <label class="form-label" id="goal-label">목표 금액 (원) <span>*</span></label>
+          <input type="text" class="form-input" id="f-goal" placeholder="30000">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" id="unit-label">1인당 금액 (원) <span>*</span></label>
+          <input type="text" class="form-input" id="f-unit" placeholder="5000">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:18px">
+        <label class="form-label" id="myqty-label">내가 살 개수 <span>*</span></label>
+        <input type="text" class="form-input" id="f-myqty" placeholder="1">
+        <div style="font-size:12px;color:var(--text3);margin-top:6px">개설자도 공동구매에 함께 참여합니다.</div>
+      </div>
+      <div class="form-group" style="margin-top:18px">
+        <label class="form-label">마감일 <span>*</span></label>
+        <input type="date" class="form-input" id="f-deadline">
+      </div>
+      <button class="btn-primary" style="width:100%;padding:14px;margin-top:8px;font-size:15px" onclick="submitPost()">공구 올리기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ===== 전역 상태 ===== */
+let TOKEN = localStorage.getItem('gonggoo_access') || '';
+let REFRESH = localStorage.getItem('gonggoo_refresh') || '';
+let ME = null;
+let posts = [];               // 정규화된 공동구매 목록
+let activeStatuses = new Set(['배송비','묶음','모집중','완료']);
+let activeCategories = new Set(['전체']);
+let selectedEmoji = '🛍️';
+let currentType = '배송비';
+let currentDetailId = null;
+let detailWS = null;
+
+const CAT_LABEL = {
+  택시:'🚕 택시', 해외직구:'✈️ 해외직구', 정기결제:'🔄 정기결제',
+  식품:'🍜 식품', 생활용품:'🧴 생활용품', 도서:'📚 도서', 디지털:'💻 디지털', 기타:'📦 기타'
+};
+const EMOJIS = ['🛍️','📦','💻','📚','🍜','🧴','🎮','🍫','🎒','🖊️','🍕','☕','🎵','🧸','🌸','🔌','🚕','✈️'];
+
+/* ===== 유틸 ===== */
+const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+const val = id => document.getElementById(id).value.trim();
+function fmtDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d)) return '-';
+  return (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
+}
+function firstError(err) {
+  if (!err) return '';
+  if (typeof err === 'string') return err;
+  if (err.detail) return Array.isArray(err.detail) ? err.detail[0] : err.detail;
+  for (const k in err) {
+    const v = err[k];
+    if (Array.isArray(v)) return v[0];
+    if (typeof v === 'string') return v;
+  }
+  return '';
+}
+
+/* ===== API 호출 헬퍼 (JWT 자동 첨부 + 토큰 갱신) ===== */
+async function api(path, options = {}) {
+  const opts = Object.assign({}, options);
+  opts.headers = Object.assign({}, options.headers || {});
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+
+  let res = await fetch(path, opts);
+  if (res.status === 401 && REFRESH) {
+    const ok = await tryRefresh();
+    if (ok) {
+      opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+      res = await fetch(path, opts);
+    }
+  }
+  return res;
+}
+
+async function tryRefresh() {
+  try {
+    const res = await fetch('/api/auth/token/refresh/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: REFRESH }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    TOKEN = data.access;
+    localStorage.setItem('gonggoo_access', TOKEN);
+    if (data.refresh) {
+      REFRESH = data.refresh;
+      localStorage.setItem('gonggoo_refresh', REFRESH);
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ===== 로그인 / 회원가입 ===== */
+function switchAuth(mode) {
+  const login = mode === 'login';
+  document.getElementById('auth-login').style.display = login ? 'block' : 'none';
+  document.getElementById('auth-register').style.display = login ? 'none' : 'block';
+  document.getElementById('lt-login').classList.toggle('active', login);
+  document.getElementById('lt-register').classList.toggle('active', !login);
+}
+
+async function handleLogin() {
+  const email = val('login-email');
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { toast('이메일과 비밀번호를 입력해주세요.', 'error'); return; }
+  try {
+    const res = await fetch('/api/auth/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) { toast('이메일 또는 비밀번호가 올바르지 않습니다.', 'error'); return; }
+    const data = await res.json();
+    TOKEN = data.access; REFRESH = data.refresh;
+    localStorage.setItem('gonggoo_access', TOKEN);
+    localStorage.setItem('gonggoo_refresh', REFRESH);
+    await afterAuth();
+  } catch (e) {
+    toast('서버에 연결할 수 없어요.', 'error');
+  }
+}
+
+async function handleRegister() {
+  const email = val('reg-email');
+  const name = val('reg-name');
+  const student_id = val('reg-student-id');
+  const password = document.getElementById('reg-password').value;
+  if (!email || !name || !student_id || !password) {
+    toast('모든 항목을 입력해주세요.', 'error'); return;
+  }
+  try {
+    const res = await fetch('/api/auth/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name, student_id, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(firstError(data) || '회원가입에 실패했어요.', 'error'); return; }
+    toast('🎉 회원가입 완료! 로그인해주세요.', 'success');
+    switchAuth('login');
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-password').focus();
+  } catch (e) {
+    toast('서버에 연결할 수 없어요.', 'error');
+  }
+}
+
+async function afterAuth() {
+  const res = await api('/api/auth/me/');
+  if (!res.ok) {
+    TOKEN = ''; localStorage.removeItem('gonggoo_access');
+    document.getElementById('login-overlay').classList.remove('hidden');
+    return;
+  }
+  ME = await res.json();
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('nav-user').innerHTML =
+    '<strong>' + ME.student_id + '</strong> ' + ME.name;
+  await loadPosts();
+}
+
+function logout() {
+  TOKEN = ''; REFRESH = ''; ME = null;
+  localStorage.removeItem('gonggoo_access');
+  localStorage.removeItem('gonggoo_refresh');
+  closeWS();
+  closeModalById('detail-modal');
+  closeModalById('create-modal');
+  document.getElementById('login-overlay').classList.remove('hidden');
+  document.getElementById('login-password').value = '';
+}
+
+/* ===== 목록 불러오기 ===== */
+function normalize(p) {
+  const isBundle = p.buy_type === 'bundle';
+  const goal = isBundle ? p.total_count : p.target_amount;
+  const current = isBundle ? p.current_count : (p.current_amount || 0);
+  return {
+    id: p.id,
+    emoji: p.emoji || '🛍️',
+    title: p.title,
+    desc: p.description || '',
+    buy_type: p.buy_type,
+    isBundle: isBundle,
+    category: p.category,
+    unit_price: p.unit_price,
+    goal: goal || 0,
+    current: current,
+    currentCount: p.current_count,
+    matched: p.status === 'matched',
+    status: p.status,
+    deadline: p.deadline,
+    creatorName: p.creator_name || '?',
+    creatorBadge: p.creator_student_id || '',
+    isJoined: p.is_joined,
+    participantCount: p.participant_count,
+  };
+}
+
+async function loadPosts() {
+  try {
+    const res = await api('/api/buys/');
+    if (!res.ok) { toast('목록을 불러오지 못했어요.', 'error'); return; }
+    const data = await res.json();
+    const results = data.results || data;
+    posts = results.map(normalize);
+    renderCards();
+  } catch (e) {
+    toast('서버에 연결할 수 없어요.', 'error');
+  }
+}
+
+/* ===== 필터 ===== */
+function toggleStatus(key, btn) {
+  if (activeStatuses.has(key)) {
+    if (activeStatuses.size === 1) return;
+    activeStatuses.delete(key); btn.classList.remove('active');
+  } else {
+    activeStatuses.add(key); btn.classList.add('active');
+  }
+  renderCards();
+}
+
+function toggleCategory(key, btn) {
+  if (key === '전체') {
+    activeCategories = new Set(['전체']);
+    document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    activeCategories.delete('전체');
+    document.getElementById('cat-전체').classList.remove('active');
+    if (activeCategories.has(key)) {
+      activeCategories.delete(key); btn.classList.remove('active');
+      if (activeCategories.size === 0) {
+        activeCategories.add('전체');
+        document.getElementById('cat-전체').classList.add('active');
+      }
+    } else {
+      activeCategories.add(key); btn.classList.add('active');
+    }
+  }
+  renderCards();
+}
+
+/* ===== 카드 렌더링 ===== */
+function updateStats() {
+  document.getElementById('stat-total').textContent = posts.length;
+  document.getElementById('stat-active').textContent = posts.filter(p => !p.matched).length;
+  document.getElementById('stat-done').textContent = posts.filter(p => p.matched).length;
+}
+
+function renderCards() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const list = posts.filter(p => {
+    const typeKey = p.isBundle ? '묶음' : '배송비';
+    if (!activeStatuses.has(typeKey)) return false;
+    if (p.matched && !activeStatuses.has('완료')) return false;
+    if (!p.matched && !activeStatuses.has('모집중')) return false;
+    if (!activeCategories.has('전체') && !activeCategories.has(p.category)) return false;
+    if (q && !p.title.toLowerCase().includes(q) && !p.desc.toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a, b) => b.id - a.id);
+
+  const grid = document.getElementById('card-grid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">' +
+      '<div class="empty-icon">🔍</div><p>해당하는 공동구매가 없어요.</p></div>';
+    updateStats(); return;
+  }
+
+  grid.innerHTML = list.map(p => {
+    const percent = p.goal > 0 ? Math.min(100, Math.round(p.current / p.goal * 100)) : 0;
+    const cur = p.isBundle
+      ? (p.current + '개 / ' + p.goal + '개')
+      : (fmt(p.current) + '원 / ' + fmt(p.goal) + '원');
+    const descShort = p.desc.length > 62 ? p.desc.slice(0, 62) + '…' : (p.desc || '설명이 없어요.');
+    return '<div class="card" onclick="openDetail(' + p.id + ')">' +
+      '<div class="card-img">' + p.emoji + '</div>' +
+      '<div class="card-body">' +
+        '<div class="card-tags">' +
+          '<span class="tag tag-' + (p.isBundle ? '묶음' : '배송비') + '">' +
+            (p.isBundle ? '📦 묶음' : '🚚 배송비') + '</span>' +
+          '<span class="tag tag-cat">' + (CAT_LABEL[p.category] || p.category) + '</span>' +
+          (p.matched ? '<span class="tag tag-완료">✅ 완료</span>'
+                     : '<span class="tag tag-모집중">모집중</span>') +
+          (p.isJoined ? '<span class="tag tag-joined">참여중</span>' : '') +
+        '</div>' +
+        '<div class="card-title">' + p.title + '</div>' +
+        '<div class="card-desc">' + descShort + '</div>' +
+        '<div class="progress-wrap">' +
+          '<div class="progress-bar"><div class="progress-fill' + (p.matched ? ' done' : '') +
+            '" style="width:' + percent + '%"></div></div>' +
+          '<div class="progress-meta">' +
+            '<span class="current' + (p.matched ? ' done' : '') + '">' + percent + '%</span>' +
+            '<span class="goal">' + cur + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-footer">' +
+        '<div class="card-author"><div class="avatar">' + p.creatorName[0] + '</div>' +
+          p.creatorBadge + '</div>' +
+        '<span>마감 ' + fmtDate(p.deadline) + '</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  updateStats();
+}
+
+/* ===== 상세 보기 ===== */
+async function openDetail(id) {
+  currentDetailId = id;
+  const res = await api('/api/buys/' + id + '/');
+  if (!res.ok) { toast('상세 정보를 불러오지 못했어요.', 'error'); return; }
+  const data = await res.json();
+  renderDetailModal(data);
+  document.getElementById('detail-modal').classList.add('open');
+  connectWS(id);
+}
+
+async function refreshDetail() {
+  if (currentDetailId == null) return;
+  const res = await api('/api/buys/' + currentDetailId + '/');
+  if (res.ok) renderDetailModal(await res.json());
+}
+
+function renderDetailModal(d) {
+  const isBundle = d.buy_type === 'bundle';
+  const goal = (isBundle ? d.total_count : d.target_amount) || 0;
+  const current = isBundle ? d.current_count : (d.current_amount || 0);
+  const matched = d.status === 'matched';
+  const percent = goal > 0 ? Math.min(100, Math.round(current / goal * 100)) : 0;
+  const isCreatorMe = ME && d.creator && d.creator.id === ME.id;
+  const mine = d.my_participation;
+
+  const myQ = mine
+    ? (isBundle ? (mine.quantity + '개') : (fmt(mine.quantity * d.unit_price) + '원'))
+    : '';
+  let actionHtml = '';
+  if (matched) {
+    actionHtml = '<div class="matched-banner"><div class="matched-icon">🎉</div>' +
+      '<div class="matched-text"><strong>매칭 완료!</strong>' +
+      '<p>목표를 달성했어요. 개설자와 연락해 진행하세요.</p></div></div>';
+  } else if (isCreatorMe) {
+    actionHtml = '<div class="joined-info" style="background:var(--surface2);' +
+      'color:var(--text2);border-color:var(--border)">📋 내가 개설한 공구입니다' +
+      (myQ ? ' · ' + myQ + ' 참여 중' : '') + '</div>';
+  } else if (mine) {
+    actionHtml = '<div class="joined-info">✅ 참여 중 · ' + myQ + '</div>' +
+      '<button class="cancel-btn" onclick="cancelJoin(' + d.id + ')">참여 취소하기</button>';
+  } else if (d.is_expired) {
+    actionHtml = '<div class="joined-info" style="background:rgba(224,50,88,.07);' +
+      'color:var(--danger);border-color:rgba(224,50,88,.2)">⏰ 마감된 공구입니다</div>';
+  } else {
+    const ph = isBundle ? '참여 개수' : '참여 수량';
+    const hint = isBundle
+      ? ('남은 수량 ' + (goal - d.current_count) + '개까지 참여 가능')
+      : ('수량 1개당 ' + fmt(d.unit_price) + '원');
+    actionHtml = '<div class="join-section">' +
+      '<input type="number" id="join-amount" min="1" value="1" placeholder="' + ph + '">' +
+      '<button class="btn-primary" onclick="joinPost(' + d.id + ')">참여하기</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:6px">' + hint + '</div>';
+  }
+
+  const partRows = (d.participations || []).map(x => {
+    const q = isBundle ? (x.quantity + '개') : (fmt(x.quantity * d.unit_price) + '원');
+    const uid = x.user ? x.user.id : null;
+    const badges = [];
+    if (ME && uid === ME.id) badges.push('나');
+    if (d.creator && uid === d.creator.id) badges.push('개설자');
+    const meTag = badges.length ? ' (' + badges.join('·') + ')' : '';
+    const nm = x.user ? x.user.name : '?';
+    const sid = x.user ? x.user.student_id : '';
+    return '<div class="participant-row">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<div class="avatar" style="width:26px;height:26px;font-size:11px">' + nm[0] + '</div>' +
+        '<span class="participant-name">' + sid + ' ' + nm + meTag + '</span>' +
+      '</div>' +
+      '<span class="participant-amount">' + q + '</span>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('dm-title').textContent = d.title;
+  document.getElementById('dm-body').innerHTML =
+    '<div class="detail-img">' + (d.emoji || '🛍️') + '</div>' +
+    '<div class="detail-label">설명</div>' +
+    '<div class="detail-value">' + (d.description || '설명이 없어요.') + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:4px">' +
+      '<div><div class="detail-label">유형</div><div style="font-size:14px">' +
+        (isBundle ? '📦 묶음' : '🚚 배송비') + '</div></div>' +
+      '<div><div class="detail-label">종류</div><div style="font-size:14px">' +
+        (CAT_LABEL[d.category] || d.category) + '</div></div>' +
+      '<div><div class="detail-label">마감일</div><div style="font-size:14px">' +
+        fmtDate(d.deadline) + '</div></div>' +
+    '</div>' +
+    '<div style="margin-top:14px"><div class="detail-label">개설자</div>' +
+      '<div style="font-size:14px">' +
+      (d.creator ? (d.creator.student_id + ' ' + d.creator.name) : '?') + '</div></div>' +
+    '<div class="big-progress">' +
+      '<div class="big-bar"><div class="big-fill' + (matched ? ' done' : '') +
+        '" style="width:' + percent + '%"></div></div>' +
+      '<div class="big-numbers">' +
+        '<div class="big-current' + (matched ? ' done' : '') + '">' + percent + '%</div>' +
+        '<div class="big-goal">' +
+          (isBundle ? (current + '개 / 목표 ' + goal + '개')
+                    : (fmt(current) + '원 / 목표 ' + fmt(goal) + '원')) +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    actionHtml +
+    '<div style="margin-top:22px">' +
+      '<div class="detail-label">참여자 (' + (d.participations || []).length + '명)</div>' +
+      '<div class="participants-list">' +
+        (partRows || '<div style="font-size:13px;color:var(--text3);padding:8px 2px">' +
+          '아직 참여자가 없어요. 첫 참여자가 되어보세요!</div>') +
+      '</div>' +
+    '</div>';
+}
+
+/* ===== 참여 / 취소 ===== */
+async function joinPost(id) {
+  const amt = parseInt(document.getElementById('join-amount').value);
+  if (!amt || amt <= 0) { toast('참여 수량을 입력해주세요.', 'error'); return; }
+  const res = await api('/api/buys/' + id + '/join/', {
+    method: 'POST', body: JSON.stringify({ quantity: amt }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(firstError(data) || '참여에 실패했어요.', 'error'); return; }
+  toast(data.matched ? '🎉 목표 달성! 매칭 완료!' : '✅ 참여 완료!', 'success');
+  await loadPosts();
+  await refreshDetail();
+}
+
+async function cancelJoin(id) {
+  const res = await api('/api/buys/' + id + '/leave/', { method: 'DELETE' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(firstError(data) || '취소에 실패했어요.', 'error'); return; }
+  toast('참여가 취소되었어요.', '');
+  await loadPosts();
+  await refreshDetail();
+}
+
+/* ===== 실시간 WebSocket ===== */
+function connectWS(id) {
+  closeWS();
+  try {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    detailWS = new WebSocket(
+      proto + '://' + location.host + '/ws/buys/' + id + '/?token=' + TOKEN);
+    detailWS.onmessage = function () {
+      refreshDetail();
+      loadPosts();
+    };
+  } catch (e) { /* WebSocket 실패해도 기본 동작은 유지 */ }
+}
+function closeWS() {
+  if (detailWS) { try { detailWS.close(); } catch (e) {} detailWS = null; }
+}
+
+/* ===== 공구 올리기 ===== */
+function openCreate() {
+  ['f-title','f-desc','f-goal','f-unit','f-myqty','f-deadline'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('f-deadline').min = new Date().toISOString().slice(0, 10);
+  selectedEmoji = '🛍️';
+  setType('배송비');
+  renderEmojiPicker();
+  document.getElementById('create-modal').classList.add('open');
+}
+
+function renderEmojiPicker() {
+  document.getElementById('emoji-picker').innerHTML = EMOJIS.map(e =>
+    '<div class="emoji-opt' + (e === selectedEmoji ? ' selected' : '') +
+    '" onclick="selectEmoji(\'' + e + '\')">' + e + '</div>'
+  ).join('');
+}
+function selectEmoji(e) { selectedEmoji = e; renderEmojiPicker(); }
+
+function setType(t) {
+  currentType = t;
+  document.getElementById('type-배송비').classList.toggle('active', t === '배송비');
+  document.getElementById('type-묶음').classList.toggle('active', t === '묶음');
+  const bulk = t === '묶음';
+  document.getElementById('goal-label').innerHTML =
+    (bulk ? '목표 개수' : '목표 금액 (원)') + ' <span>*</span>';
+  document.getElementById('unit-label').innerHTML =
+    (bulk ? '개당 가격 (원)' : '1인당 금액 (원)') + ' <span>*</span>';
+  document.getElementById('myqty-label').innerHTML =
+    (bulk ? '내가 살 개수' : '내가 살 수량') + ' <span>*</span>';
+  document.getElementById('f-goal').placeholder = bulk ? '24' : '30000';
+  document.getElementById('f-unit').placeholder = bulk ? '800' : '5000';
+}
+
+async function submitPost() {
+  const title = val('f-title');
+  const desc = val('f-desc');
+  const goal = parseInt(val('f-goal'));
+  const unit = parseInt(val('f-unit'));
+  const myqty = parseInt(val('f-myqty'));
+  const deadline = val('f-deadline');
+  const category = document.getElementById('f-category').value;
+  if (!title) { toast('제목을 입력해주세요.', 'error'); return; }
+  if (!goal || goal <= 0) { toast('목표를 입력해주세요.', 'error'); return; }
+  if (!unit || unit <= 0) { toast('금액/가격을 입력해주세요.', 'error'); return; }
+  if (!myqty || myqty <= 0) { toast('내가 살 수량을 입력해주세요.', 'error'); return; }
+  if (!deadline) { toast('마감일을 선택해주세요.', 'error'); return; }
+
+  const buyType = currentType === '묶음' ? 'bundle' : 'min_order';
+  const body = {
+    title: title,
+    description: desc,
+    emoji: selectedEmoji,
+    category: category,
+    buy_type: buyType,
+    unit_price: unit,
+    creator_quantity: myqty,
+    deadline: deadline + 'T23:59:00',
+  };
+  if (buyType === 'bundle') body.total_count = goal;
+  else body.target_amount = goal;
+
+  const res = await api('/api/buys/', { method: 'POST', body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(firstError(data) || '등록에 실패했어요.', 'error'); return; }
+  closeModalById('create-modal');
+  toast('🎉 공구가 등록되었어요!', 'success');
+  await loadPosts();
+}
+
+/* ===== 모달 / 토스트 ===== */
+function closeModal(e, id) {
+  if (e.target === document.getElementById(id)) closeModalById(id);
+}
+function closeModalById(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'detail-modal') { currentDetailId = null; closeWS(); }
+}
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.getElementById('toast-wrap').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+/* ===== 키보드 단축키 ===== */
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+document.getElementById('reg-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleRegister();
+});
+
+/* ===== 시작 ===== */
+(async function init() {
+  if (TOKEN) {
+    await afterAuth();
+  } else {
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>
+{% endverbatim %}

@@ -215,6 +215,7 @@ input::placeholder { color: var(--text3); }
 .detail-img {
   height: 130px; background: var(--surface2); border-radius: 10px; margin-bottom: 20px;
   display: flex; align-items: center; justify-content: center; font-size: 56px; border: 1px solid var(--border);
+  overflow: hidden;
 }
 .detail-label { font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
 .detail-value { font-size: 14px; color: var(--text); margin-bottom: 16px; }
@@ -1015,6 +1016,7 @@ function normalize(p) {
     isJoined: p.is_joined,
     participantCount: p.participant_count,
     item_url: p.item_url || '',
+    previewImage: p.preview_image_url || '',
   };
 }
 
@@ -1156,6 +1158,16 @@ function fmtRemaining(deadline) {
   return secs + '초';
 }
 
+/* ===== 카드/상세 대표 이미지 (링크 미리보기 사진 또는 이모지) ===== */
+function mediaIcon(previewImage, emoji) {
+  if (previewImage) {
+    return '<img src="' + previewImage + '" alt="" loading="lazy" ' +
+      'style="width:100%;height:100%;object-fit:cover" ' +
+      'onerror="this.replaceWith(document.createTextNode(\'' + emoji + '\'))">';
+  }
+  return emoji;
+}
+
 /* ===== 카드 빌더 ===== */
 function buildCard(p, mini, variant) {
   const isDone = variant === 'done' || p.done;
@@ -1181,7 +1193,7 @@ function buildCard(p, mini, variant) {
     : '<span>마감 ' + fmtDate(p.deadline) + '</span>';
 
   return '<div class="' + cardClass + '" onclick="openDetail(' + p.id + ')">' +
-    '<div class="card-img">' + p.emoji + '</div>' +
+    '<div class="card-img">' + mediaIcon(p.previewImage, p.emoji) + '</div>' +
     '<div class="card-body">' +
       '<div class="card-tags">' +
         '<span class="tag tag-' + (p.isBundle ? '묶음' : p.isGroupDiscount ? '단체할인' : '최소주문금액') + '">' +
@@ -1331,7 +1343,7 @@ function renderDetailModal(d) {
 
   document.getElementById('dm-title').textContent = d.title;
   document.getElementById('dm-body').innerHTML =
-    '<div class="detail-img">' + (d.emoji || '🛍️') + '</div>' +
+    '<div class="detail-img">' + mediaIcon(d.preview_image_url, d.emoji || '🛍️') + '</div>' +
     '<div class="detail-label">설명</div>' +
     '<div class="detail-value">' + (d.description || '설명이 없어요.') + '</div>' +
     (d.item_url ? '<a href="' + d.item_url + '" target="_blank" rel="noopener" ' +

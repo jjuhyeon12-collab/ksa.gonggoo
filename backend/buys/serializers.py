@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import GroupBuy, Participation
+from .link_preview import fetch_og_image
 from accounts.serializers import UserSerializer
 
 
@@ -29,6 +30,7 @@ class GroupBuyListSerializer(serializers.ModelSerializer):
             "buy_type", "status", "unit_price",
             "total_count", "target_amount", "current_count", "current_amount",
             "participant_count", "deadline", "image", "item_url",
+            "preview_image_url",
             "creator_name", "creator_student_id", "is_joined",
             "is_expired", "created_at",
         ]
@@ -54,7 +56,7 @@ class GroupBuyDetailSerializer(serializers.ModelSerializer):
         model = GroupBuy
         fields = [
             "id", "creator", "title", "description", "emoji", "category",
-            "item_url", "image",
+            "item_url", "image", "preview_image_url",
             "buy_type", "total_count", "target_amount", "unit_price",
             "current_count", "current_amount", "participant_count",
             "status", "deadline", "is_expired", "participations",
@@ -137,6 +139,10 @@ class GroupBuyCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         creator_quantity = validated_data.pop("creator_quantity")
         validated_data["creator"] = self.context["request"].user
+        # 상품 링크가 있으면 페이지 미리보기 이미지를 추출해 저장
+        item_url = validated_data.get("item_url")
+        if item_url:
+            validated_data["preview_image_url"] = fetch_og_image(item_url)
         group_buy = super().create(validated_data)
         # 개설자도 첫 참여자로 등록
         Participation.objects.create(

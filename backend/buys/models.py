@@ -44,6 +44,10 @@ class GroupBuy(models.Model):
     )
     item_url = models.URLField(blank=True, verbose_name="상품 링크")
     image = models.ImageField(upload_to="buys/", blank=True, null=True, verbose_name="상품 이미지")
+    # 상품 링크 페이지의 Open Graph 미리보기 이미지 (개설 시 자동 추출)
+    preview_image_url = models.URLField(
+        max_length=500, blank=True, verbose_name="링크 미리보기 이미지"
+    )
 
     buy_type = models.CharField(
         max_length=14,

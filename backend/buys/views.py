@@ -87,9 +87,12 @@ class GroupBuyDetailView(generics.RetrieveUpdateDestroyAPIView):
                 raise PermissionDenied("개설자만 수정/삭제할 수 있습니다.")
 
     def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError
         if instance.status in [GroupBuy.Status.MATCHED, GroupBuy.Status.DONE]:
-            from rest_framework.exceptions import ValidationError
             raise ValidationError("매칭/완료된 공동구매는 삭제할 수 없습니다.")
+        # 개설자 외 참여자가 있으면 개설 취소 불가
+        if instance.participations.exclude(user=instance.creator).exists():
+            raise ValidationError("이미 참여자가 있어 개설을 취소할 수 없습니다.")
         instance.delete()
 
 

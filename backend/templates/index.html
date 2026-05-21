@@ -1308,9 +1308,17 @@ function renderDetailModal(d) {
           '원하는 금액을 자유롭게 입력하세요 (최소 100원)</div>');
     }
   } else if (isCreatorMe) {
+    const otherCount = (d.participations || [])
+      .filter(x => x.user && d.creator && x.user.id !== d.creator.id).length;
     actionHtml = '<div class="joined-info" style="background:var(--surface2);' +
       'color:var(--text2);border-color:var(--border)">📋 내가 개설한 공구입니다' +
       (myQ ? ' · ' + myQ + ' 참여 중' : '') + '</div>';
+    if (otherCount === 0) {
+      actionHtml += '<button class="cancel-btn" onclick="deletePost(' + d.id + ')">개설 취소하기</button>';
+    } else {
+      actionHtml += '<div style="font-size:12px;color:var(--text3);margin-top:8px;text-align:center">' +
+        '이미 ' + otherCount + '명이 참여해 개설을 취소할 수 없어요.</div>';
+    }
   } else if (mine) {
     actionHtml = '<div class="joined-info">✅ 참여 중 · ' + myQ + '</div>' +
       '<button class="cancel-btn" onclick="cancelJoin(' + d.id + ')">참여 취소하기</button>';
@@ -1443,6 +1451,19 @@ async function cancelJoin(id) {
   toast('참여가 취소되었어요.', '');
   await Promise.all([loadPosts(), loadMyBuys()]);
   await refreshDetail();
+}
+
+async function deletePost(id) {
+  if (!confirm('이 공동구매 개설을 취소(삭제)하시겠어요?\n삭제하면 되돌릴 수 없습니다.')) return;
+  const res = await api('/api/buys/' + id + '/', { method: 'DELETE' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    toast(firstError(data) || '개설 취소에 실패했어요.', 'error');
+    return;
+  }
+  toast('공동구매 개설이 취소되었어요.', '');
+  closeModalById('detail-modal');
+  await Promise.all([loadPosts(), loadMyBuys()]);
 }
 
 async function completePost(id) {

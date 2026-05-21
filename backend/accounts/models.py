@@ -23,6 +23,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=50)
     student_id = models.CharField(max_length=10, unique=True, verbose_name="학번")
+    phone_number = models.CharField(max_length=20, blank=True, verbose_name="전화번호")
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

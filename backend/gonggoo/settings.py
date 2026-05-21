@@ -165,6 +165,19 @@ CORS_ALLOW_CREDENTIALS = True
 # 학교 이메일 도메인
 SCHOOL_EMAIL_DOMAIN = "ksa.hs.kr"
 
-# Kakao Bizm
-KAKAO_BIZM_API_KEY = os.getenv("KAKAO_BIZM_API_KEY", "")
-KAKAO_SENDER_KEY = os.getenv("KAKAO_SENDER_KEY", "")
+# 이메일 알림 (Gmail SMTP)
+# EMAIL_HOST_USER / EMAIL_HOST_PASSWORD 가 설정돼 있으면 실제 발송,
+# 없으면 서버 콘솔에 메일 내용을 출력(개발용).
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_TIMEOUT = 15
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    DEFAULT_FROM_EMAIL = f"GongGoo <{EMAIL_HOST_USER}>"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "GongGoo <noreply@gonggoo.local>"

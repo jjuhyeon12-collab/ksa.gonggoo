@@ -26,3 +26,20 @@ services:
       # Render에 3.12.7이 없다고 빌드가 실패하면 이 값을 조정하세요 (예: 3.12)
       - key: PYTHON_VERSION
         value: "3.12.7"
+      # 이메일 알림용 - Render 대시보드에서 값을 입력 (Gmail 주소 / 앱 비밀번호)
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      # 카카오톡 알림용(Solapi) - Render 대시보드에서 값을 입력
+      - key: KAKAO_API_KEY
+        sync: false
+      - key: KAKAO_API_SECRET
+        sync: false
+      - key: KAKAO_SENDER_PHONE
+        sync: false
+      # 실제 카카오 알림톡 발송 시에만 입력 (없으면 문자(SMS)로 대체 발송)
+      - key: KAKAO_PF_ID
+        sync: false
+      - key: KAKAO_TEMPLATE_ID
+        sync: false

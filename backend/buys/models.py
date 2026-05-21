@@ -5,12 +5,15 @@ from django.utils import timezone
 
 class GroupBuy(models.Model):
     class BuyType(models.TextChoices):
-        BUNDLE = "bundle", "묶음 나눠사기"       # 정확한 개수 맞춰야 매칭
-        MIN_ORDER = "min_order", "최소주문금액"  # 목표금액 이상이면 매칭
+        BUNDLE = "bundle", "묶음 나눠사기"              # 정확한 개수 맞춰야 매칭
+        MIN_ORDER = "min_order", "최소주문금액 모으기"    # 목표 금액 이상이면 매칭
+        GROUP_DISCOUNT = "group_discount", "단체 할인 받기"  # 목표 개수 이상이면 매칭
 
     class Status(models.TextChoices):
         OPEN = "open", "모집 중"
+        EXTENDING = "extending", "추가 모집 중"   # 배송비 목표 달성 후 1시간 추가 모집
         MATCHED = "matched", "매칭 완료"
+        DONE = "done", "완료 처리"
         CANCELLED = "cancelled", "취소됨"
         EXPIRED = "expired", "기간 만료"
 
@@ -43,7 +46,7 @@ class GroupBuy(models.Model):
     image = models.ImageField(upload_to="buys/", blank=True, null=True, verbose_name="상품 이미지")
 
     buy_type = models.CharField(
-        max_length=10,
+        max_length=14,
         choices=BuyType.choices,
         default=BuyType.MIN_ORDER,
         verbose_name="구매 방식",
@@ -95,26 +98,57 @@ class GroupBuy(models.Model):
         return self.participations.count()
 
     def check_and_match(self):
-        """매칭 조건 충족 시 상태를 matched로 변경하고 True 반환."""
+        """매칭 조건 충족 시 상태를 변경하고 최종 매칭 여부를 반환.
+
+        반환값:
+          True  – 최종 matched 상태로 전환됨 (알림 발송 필요)
+          False – 변화 없거나, EXTENDING 기간 시작됨 (아직 최종 매칭 아님)
+        """
+        from datetime import timedelta
+
+        # EXTENDING 기간이 끝났으면 최종 매칭 처리
+        if self.status == self.Status.EXTENDING:
+            if timezone.now() >= self.deadline:
+                self.status = self.Status.MATCHED
+                self.save(update_fields=["status"])
+                return True
+            return False  # 아직 추가 모집 중
+
         if self.status != self.Status.OPEN:
             return False
 
-        matched = False
         if self.buy_type == self.BuyType.BUNDLE:
-            matched = self.current_count == self.total_count
-        elif self.buy_type == self.BuyType.MIN_ORDER:
-            matched = (
-                self.target_amount is not None
-                and self.current_count * self.unit_price >= self.target_amount
-            )
+            if self.current_count == self.total_count:
+                self.status = self.Status.MATCHED
+                self.save(update_fields=["status"])
+                return True
 
-        if matched:
-            self.status = self.Status.MATCHED
-            self.save(update_fields=["status"])
-            return True
+        elif self.buy_type == self.BuyType.GROUP_DISCOUNT:
+            if (
+                self.total_count is not None
+                and self.current_count >= self.total_count
+            ):
+                # 목표 달성 → 1시간 추가 모집 시작
+                self.status = self.Status.EXTENDING
+                self.deadline = timezone.now() + timedelta(hours=1)
+                self.save(update_fields=["status", "deadline"])
+                return False  # 최종 매칭은 아직
+
+        elif self.buy_type == self.BuyType.MIN_ORDER:
+            # 목표 금액 이상 모이면 → 1시간 추가 모집 시작
+            if (
+                self.target_amount is not None
+                and self.current_amount >= self.target_amount
+            ):
+                self.status = self.Status.EXTENDING
+                self.deadline = timezone.now() + timedelta(hours=1)
+                self.save(update_fields=["status", "deadline"])
+                return False  # 최종 매칭은 아직
+
         return False
 
     def is_expired(self):
+        """마감일이 지난 OPEN 상태만 만료로 간주. EXTENDING은 별도 처리."""
         return timezone.now() > self.deadline and self.status == self.Status.OPEN
 
 

@@ -821,6 +821,7 @@ let linkFirst = false;
 let selectedEmoji = '🛍️';
 let currentType = '최소주문금액';
 let currentDetailId = null;
+let currentDetail = null;   // 현재 열려 있는 상세 데이터 (참여 경고 판단용)
 let detailWS = null;
 let similarityConfirmed = false;   // 유사상품 경고를 확인하고 강행 여부
 let extTimerInterval = null;       // EXTENDING 남은시간 카운트다운 타이머
@@ -1240,6 +1241,7 @@ async function refreshDetail() {
 }
 
 function renderDetailModal(d) {
+  currentDetail = d;
   const isBundle = d.buy_type === 'bundle';
   const isGroupDiscount = d.buy_type === 'group_discount';
   const isMinOrder = d.buy_type === 'min_order';
@@ -1390,6 +1392,29 @@ async function joinPost(id, fixedQty) {
     ? fixedQty
     : parseInt(document.getElementById('join-amount').value);
   if (!amt || amt <= 0) { toast('참여 수량을 입력해주세요.', 'error'); return; }
+
+  // 참여하면 취소가 불가능해지는 경우 경고 확인
+  const d = currentDetail;
+  if (d && d.id === id) {
+    let willLock = false, reason = '';
+    if (d.status === 'extending') {
+      willLock = true;
+      reason = '추가 모집 중인 공동구매는 참여 후 취소할 수 없습니다.';
+    } else if (d.status === 'open') {
+      if (d.buy_type === 'bundle' && d.current_count + amt >= d.total_count) {
+        willLock = true;
+        reason = '지금 참여하면 모집이 완료되어 참여를 취소할 수 없습니다.';
+      } else if (d.buy_type === 'group_discount' && d.current_count + amt >= d.total_count) {
+        willLock = true;
+        reason = '지금 참여하면 추가 모집이 시작되어 참여를 취소할 수 없습니다.';
+      } else if (d.buy_type === 'min_order' && (d.current_amount || 0) + amt >= d.target_amount) {
+        willLock = true;
+        reason = '지금 참여하면 추가 모집이 시작되어 참여를 취소할 수 없습니다.';
+      }
+    }
+    if (willLock && !confirm('⚠️ ' + reason + '\n\n계속 참여하시겠어요?')) return;
+  }
+
   const res = await api('/api/buys/' + id + '/join/', {
     method: 'POST', body: JSON.stringify({ quantity: amt }),
   });
@@ -1712,7 +1737,7 @@ function closeModal(e, id) {
 }
 function closeModalById(id) {
   document.getElementById(id).classList.remove('open');
-  if (id === 'detail-modal') { currentDetailId = null; closeWS(); clearExtTimer(); }
+  if (id === 'detail-modal') { currentDetailId = null; currentDetail = null; closeWS(); clearExtTimer(); }
   if (id === 'create-modal') { similarityConfirmed = false; hideSimilarWarning(); }
 }
 

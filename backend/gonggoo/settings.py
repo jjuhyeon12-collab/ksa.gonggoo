@@ -19,6 +19,15 @@ if RENDER_HOSTNAME:
 # HTTPS 프록시(클라우드) 뒤에서 동작하도록 설정
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# 프로덕션(HTTPS) 보안 강화 — DEBUG=False 일 때만 적용
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True          # HTTP 요청을 HTTPS로 리다이렉트
+    SESSION_COOKIE_SECURE = True        # 세션 쿠키를 HTTPS에서만 전송
+    CSRF_COOKIE_SECURE = True           # CSRF 쿠키를 HTTPS에서만 전송
+    SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME 스니핑 방지
+    SECURE_HSTS_SECONDS = 31536000      # HSTS 1년
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
 # 관리자 로그인 등 POST 요청을 허용할 도메인 (HTTPS 배포 시 필요)
 CSRF_TRUSTED_ORIGINS = []
 if RENDER_HOSTNAME:

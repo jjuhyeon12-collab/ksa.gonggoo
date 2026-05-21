@@ -952,7 +952,7 @@ async function afterAuth() {
   ME = await res.json();
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('nav-user').innerHTML =
-    '<strong>' + ME.student_id + '</strong> ' + ME.name;
+    '<strong>' + esc(ME.student_id) + '</strong> ' + esc(ME.name);
   await Promise.all([loadPosts(), loadMyBuys()]);
 }
 
@@ -1159,14 +1159,23 @@ function fmtRemaining(deadline) {
   return secs + '초';
 }
 
+/* ===== HTML 이스케이프 (XSS 방지) ===== */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 /* ===== 카드/상세 대표 이미지 (링크 미리보기 사진 또는 이모지) ===== */
 function mediaIcon(previewImage, emoji) {
+  const safeEmoji = esc(emoji || '🛍️');
   if (previewImage) {
-    return '<img src="' + previewImage + '" alt="" loading="lazy" ' +
+    return '<img src="' + esc(previewImage) + '" alt="" loading="lazy" ' +
+      'data-emoji="' + safeEmoji + '" ' +
       'style="width:100%;height:100%;object-fit:cover" ' +
-      'onerror="this.replaceWith(document.createTextNode(\'' + emoji + '\'))">';
+      'onerror="this.replaceWith(document.createTextNode(this.dataset.emoji))">';
   }
-  return emoji;
+  return safeEmoji;
 }
 
 /* ===== 카드 빌더 ===== */
@@ -1199,12 +1208,12 @@ function buildCard(p, mini, variant) {
       '<div class="card-tags">' +
         '<span class="tag tag-' + (p.isBundle ? '묶음' : p.isGroupDiscount ? '단체할인' : '최소주문금액') + '">' +
           (p.isBundle ? '📦 묶음' : p.isGroupDiscount ? '🏷️ 단체할인' : '🛒 최소주문금액') + '</span>' +
-        '<span class="tag tag-cat">' + (CAT_LABEL[p.category] || p.category) + '</span>' +
+        '<span class="tag tag-cat">' + (CAT_LABEL[p.category] || esc(p.category)) + '</span>' +
         statusTag +
         (p.isJoined ? '<span class="tag tag-joined">참여중</span>' : '') +
       '</div>' +
-      '<div class="card-title">' + p.title + '</div>' +
-      '<div class="card-desc">' + descShort + '</div>' +
+      '<div class="card-title">' + esc(p.title) + '</div>' +
+      '<div class="card-desc">' + esc(descShort) + '</div>' +
       '<div class="progress-wrap">' +
         '<div class="progress-bar"><div class="progress-fill' + (isMatched || isDone || isExtending ? ' done' : '') +
           '" style="width:' + percent + '%"></div></div>' +
@@ -1215,8 +1224,8 @@ function buildCard(p, mini, variant) {
       '</div>' +
     '</div>' +
     '<div class="card-footer">' +
-      '<div class="card-author"><div class="avatar">' + (p.creatorName[0] || '?') + '</div>' +
-        p.creatorBadge + '</div>' +
+      '<div class="card-author"><div class="avatar">' + esc(p.creatorName[0] || '?') + '</div>' +
+        esc(p.creatorBadge) + '</div>' +
       footerRight +
     '</div>' +
   '</div>';
@@ -1336,8 +1345,8 @@ function renderDetailModal(d) {
     const sid = x.user ? x.user.student_id : '';
     return '<div class="participant-row">' +
       '<div style="display:flex;align-items:center;gap:8px">' +
-        '<div class="avatar" style="width:26px;height:26px;font-size:11px">' + (nm[0] || '?') + '</div>' +
-        '<span class="participant-name">' + sid + ' ' + nm + meTag + '</span>' +
+        '<div class="avatar" style="width:26px;height:26px;font-size:11px">' + esc(nm[0] || '?') + '</div>' +
+        '<span class="participant-name">' + esc(sid) + ' ' + esc(nm) + meTag + '</span>' +
       '</div>' +
       '<span class="participant-amount">' + q + '</span>' +
     '</div>';
@@ -1347,8 +1356,8 @@ function renderDetailModal(d) {
   document.getElementById('dm-body').innerHTML =
     '<div class="detail-img">' + mediaIcon(d.preview_image_url, d.emoji || '🛍️') + '</div>' +
     '<div class="detail-label">설명</div>' +
-    '<div class="detail-value">' + (d.description || '설명이 없어요.') + '</div>' +
-    (d.item_url ? '<a href="' + d.item_url + '" target="_blank" rel="noopener" ' +
+    '<div class="detail-value">' + esc(d.description || '설명이 없어요.') + '</div>' +
+    (d.item_url ? '<a href="' + esc(d.item_url) + '" target="_blank" rel="noopener" ' +
       'style="display:inline-flex;align-items:center;gap:6px;margin:10px 0 4px;' +
       'padding:7px 14px;border-radius:8px;background:rgba(80,40,200,.08);' +
       'color:#4020a0;font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(80,40,200,.2)">' +
@@ -1357,13 +1366,13 @@ function renderDetailModal(d) {
       '<div><div class="detail-label">유형</div><div style="font-size:14px">' +
         (isBundle ? '📦 묶음' : isGroupDiscount ? '🏷️ 단체할인' : '🛒 최소주문금액') + '</div></div>' +
       '<div><div class="detail-label">종류</div><div style="font-size:14px">' +
-        (CAT_LABEL[d.category] || d.category) + '</div></div>' +
+        (CAT_LABEL[d.category] || esc(d.category)) + '</div></div>' +
       '<div><div class="detail-label">마감일</div><div style="font-size:14px">' +
         fmtDate(d.deadline) + '</div></div>' +
     '</div>' +
     '<div style="margin-top:14px"><div class="detail-label">개설자</div>' +
       '<div style="font-size:14px">' +
-      (d.creator ? (d.creator.student_id + ' ' + d.creator.name) : '?') + '</div></div>' +
+      (d.creator ? esc(d.creator.student_id + ' ' + d.creator.name) : '?') + '</div></div>' +
     '<div class="big-progress">' +
       '<div class="big-bar"><div class="big-fill' + (matched || done || extending ? ' done' : '') +
         '" style="width:' + percent + '%"></div></div>' +
@@ -1577,8 +1586,8 @@ function showSimilarWarning(items, title, category) {
       ? Math.min(100, Math.round((p.current_amount || 0) / p.target_amount * 100))
       : 0;
     return '<div class="similar-item">' +
-      '<span class="similar-item-title">' + (p.emoji || '') + ' ' + p.title + '</span>' +
-      '<span class="similar-item-meta">' + (CAT_LABEL[p.category] || p.category) + ' · ' + pct + '%</span>' +
+      '<span class="similar-item-title">' + esc(p.emoji || '') + ' ' + esc(p.title) + '</span>' +
+      '<span class="similar-item-meta">' + (CAT_LABEL[p.category] || esc(p.category)) + ' · ' + pct + '%</span>' +
     '</div>';
   }).join('');
   box.innerHTML = '<div class="similar-warning">' +

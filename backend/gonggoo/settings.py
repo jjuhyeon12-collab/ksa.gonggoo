@@ -97,6 +97,13 @@ if DATABASE_URL:
         "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
+    if not DEBUG:
+        # 프로덕션에서 DATABASE_URL이 없으면 즉시 오류 — SQLite 사용 방지
+        raise RuntimeError(
+            "DATABASE_URL 환경변수가 설정되지 않았습니다. "
+            "Render 대시보드 → 서비스 → Environment 탭에서 "
+            "DATABASE_URL이 PostgreSQL과 연결되어 있는지 확인하세요."
+        )
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

@@ -480,7 +480,11 @@ textarea.form-input { resize: vertical; min-height: 90px; }
       <button class="btn-primary" style="width:100%;padding:12px;margin-top:6px" onclick="handleLogin()">로그인</button>
     </div>
     <div id="auth-register" style="display:none">
-      <input type="text" class="form-input" id="reg-email" placeholder="학교 이메일 (@ksa.hs.kr)">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch">
+        <input type="text" class="form-input" id="reg-email" placeholder="학교 이메일 (@ksa.hs.kr)" style="flex:1;margin-bottom:0">
+        <button class="btn-primary btn-sm" id="btn-send-code" onclick="sendVerificationCode()" style="white-space:nowrap;flex-shrink:0;padding:0 14px">인증코드 받기</button>
+      </div>
+      <input type="text" class="form-input" id="reg-code" placeholder="이메일로 받은 인증코드 6자리" maxlength="6">
       <input type="text" class="form-input" id="reg-name" placeholder="이름">
       <input type="text" class="form-input" id="reg-student-id" placeholder="학번 (예: 25-105)">
       <input type="tel" class="form-input" id="reg-phone" placeholder="전화번호 (예: 010-1234-5678)">
@@ -918,8 +922,49 @@ async function handleLogin() {
   } catch (e) { toast('서버에 연결할 수 없어요.', 'error'); }
 }
 
+async function sendVerificationCode() {
+  const email = val('reg-email');
+  if (!email) { toast('이메일을 입력해주세요.', 'error'); return; }
+  const btn = document.getElementById('btn-send-code');
+  btn.disabled = true;
+  btn.textContent = '발송 중...';
+  try {
+    const res = await fetch('/api/auth/email-verify/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(firstError(data) || '발송에 실패했어요.', 'error');
+      btn.disabled = false;
+      btn.textContent = '인증코드 받기';
+      return;
+    }
+    toast('📧 인증코드를 발송했어요. 이메일을 확인해주세요.', 'success');
+    document.getElementById('reg-code').focus();
+    // 60초 쿨다운
+    let sec = 60;
+    btn.textContent = sec + '초 후 재발송';
+    const timer = setInterval(() => {
+      sec--;
+      btn.textContent = sec + '초 후 재발송';
+      if (sec <= 0) {
+        clearInterval(timer);
+        btn.textContent = '재발송';
+        btn.disabled = false;
+      }
+    }, 1000);
+  } catch (e) {
+    toast('서버에 연결할 수 없어요.', 'error');
+    btn.disabled = false;
+    btn.textContent = '인증코드 받기';
+  }
+}
+
 async function handleRegister() {
   const email = val('reg-email');
+  const code = val('reg-code');
   const name = val('reg-name');
   const student_id = val('reg-student-id');
   const phone_number = val('reg-phone');
@@ -927,11 +972,14 @@ async function handleRegister() {
   if (!email || !name || !student_id || !password) {
     toast('전화번호를 제외한 모든 항목을 입력해주세요.', 'error'); return;
   }
+  if (!code) {
+    toast('이메일로 받은 인증코드를 입력해주세요.', 'error'); return;
+  }
   try {
     const res = await fetch('/api/auth/register/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, student_id, phone_number, password }),
+      body: JSON.stringify({ email, name, student_id, phone_number, password, verification_code: code }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { toast(firstError(data) || '회원가입에 실패했어요.', 'error'); return; }

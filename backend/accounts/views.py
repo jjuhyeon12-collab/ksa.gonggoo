@@ -7,7 +7,16 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import EmailVerification, User
-from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer, PasswordChangeSerializer
+from .serializers import (
+    RegisterSerializer, UserSerializer, UserUpdateSerializer,
+    PasswordChangeSerializer, CustomTokenObtainPairSerializer,
+    normalize_email,
+)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """이메일 소문자 정규화 로그인 뷰"""
+    serializer_class = CustomTokenObtainPairSerializer
 
 
 class SendVerificationCodeView(APIView):
@@ -28,8 +37,8 @@ class SendVerificationCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 이미 가입된 이메일 검사
-        if User.objects.filter(email=email).exists():
+        # 이미 가입된 이메일 검사 (대소문자 무관)
+        if User.objects.filter(email__iexact=email).exists():
             return Response({"email": "이미 가입된 이메일입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         # 기존 미사용 코드 삭제 후 새 코드 생성

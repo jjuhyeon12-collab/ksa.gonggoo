@@ -370,13 +370,137 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .login-tab.active { background: rgba(255,107,53,.1); color: var(--accent); border-color: var(--accent); }
 .login-hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 14px; }
 
-@media (max-width: 620px) {
+/* ════════════════════════════════════════
+   모바일 반응형  (≤ 768px)
+   ════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── 네비게이션: 로고+버튼 위 / 탭 아래 2행 ── */
+  nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 16px 0;
+    column-gap: 8px;
+    row-gap: 0;
+  }
+  .logo { font-size: 18px; }
+  .logo span { display: none; }           /* 부제 숨김 */
+
+  .nav-tabs {
+    order: 10;                            /* 맨 아래 행으로 */
+    width: calc(100% + 32px);
+    margin: 8px -16px 0;
+    padding: 8px 16px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    gap: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab { white-space: nowrap; flex-shrink: 0; font-size: 13px; padding: 6px 12px; }
+
+  .nav-right { gap: 6px; }
+  .nav-user { display: none; }           /* 유저 뱃지 숨김 */
+  .btn-primary.btn-sm { font-size: 13px; padding: 8px 12px; }
+  .btn-ghost { font-size: 13px; padding: 7px 10px; }
+
+  /* ── 메인 패딩 ── */
+  main { padding: 14px 14px 48px; }
+
+  /* ── 카테고리 바: 가로 스크롤 ── */
+  .category-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 10px 14px;
+    gap: 6px;
+  }
+  .category-bar::-webkit-scrollbar { display: none; }
+  .cat-tab { flex-shrink: 0; }
+
+  /* ── 필터 바: 가로 스크롤 ── */
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 10px 14px;
+    gap: 8px;
+    align-items: center;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-group { flex-shrink: 0; }
+  .filter-spacer { display: none; }
+  #search-input { width: 110px; flex-shrink: 0; }
+
+  /* ── 폼 ── */
   .form-row { grid-template-columns: 1fr; }
-  main { padding: 16px 16px 40px; }
-  #search-input { width: 100%; }
-  .filter-bar { gap: 8px; }
-  .nav-tabs { gap: 2px; }
-  .nav-tab { padding: 5px 10px; font-size: 13px; }
+  .type-toggle { grid-template-columns: 1fr; }  /* 공구 유형 3개 → 1열 */
+
+  /* ── 모달: 바텀시트 ── */
+  .modal-bg {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+    max-width: 100%;
+    transform: translateY(40px);          /* 위에서 살짝 내려오는 효과 */
+  }
+  .modal-header { padding: 20px 20px 0; }
+  .modal-body  { padding: 16px 20px 36px; }
+
+  /* 드래그 핸들 표시 */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+
+  /* ── 로그인: 중앙 유지, 스크롤 허용 ── */
+  .login-overlay { padding: 16px; overflow-y: auto; align-items: flex-start; padding-top: 40px; }
+  .login-card { max-width: 100%; padding: 28px 20px; }
+}
+
+/* ════════════════════════════════════════
+   소형 폰  (≤ 480px)
+   ════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* 탭 텍스트 */
+  .nav-tab { font-size: 12px; padding: 5px 9px; }
+
+  /* 공구 올리기 버튼: "+" 만 표시 */
+  .btn-text-full { display: none; }
+  .btn-text-short { display: inline !important; }
+
+  /* 카드: 강제 1열 */
+  .grid { grid-template-columns: 1fr; }
+
+  /* 인증코드 버튼: 이메일 아래로 */
+  .reg-email-row { flex-direction: column !important; }
+  .reg-email-row #btn-send-code { width: 100% !important; padding: 11px !important; }
+
+  /* 검색창 */
+  #search-input { width: 90px; }
+
+  /* 토스트: 하단 가운데 */
+  .toast-wrap { right: 12px; left: 12px; bottom: 14px; align-items: stretch; }
+  .toast { max-width: 100%; text-align: center; }
+
+  /* 랜딩 CTA 버튼: 세로 배치 */
+  .landing-cta { flex-direction: column !important; }
+  .landing-cta > button { width: 100%; }
+
+  /* 로그인 카드 최상단 패딩 줄이기 */
+  .login-overlay { padding-top: 20px; }
 }
 
 /* ── 설정 페이지 ── */
@@ -390,7 +514,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .settings-field:last-of-type { margin-bottom: 0; }
 .settings-label { font-size: 13px; font-weight: 600; color: var(--text2); }
 .settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media(max-width:480px){ .settings-row { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .settings-row { grid-template-columns: 1fr; } }
 .settings-btn { margin-top: 18px; width: 100%; padding: 12px; font-size: 15px; }
 .settings-msg {
   font-size: 13px; border-radius: 8px; padding: 9px 13px; margin-top: 10px;
@@ -480,7 +604,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
       <button class="btn-primary" style="width:100%;padding:12px;margin-top:6px" onclick="handleLogin()">로그인</button>
     </div>
     <div id="auth-register" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch">
+      <div class="reg-email-row" style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch">
         <input type="text" class="form-input" id="reg-email" placeholder="학교 이메일 (@ksa.hs.kr)" style="flex:1;margin-bottom:0">
         <button class="btn-primary btn-sm" id="btn-send-code" onclick="sendVerificationCode()" style="white-space:nowrap;flex-shrink:0;padding:0 14px">인증코드 받기</button>
       </div>
@@ -510,7 +634,10 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   </div>
   <div class="nav-right">
     <div class="nav-user" id="nav-user">로딩 중...</div>
-    <button class="btn-primary btn-sm" onclick="openCreate()">+ 공구 올리기</button>
+    <button class="btn-primary btn-sm" onclick="openCreate()">
+      <span class="btn-text-full">+ 공구 올리기</span>
+      <span class="btn-text-short" style="display:none">+</span>
+    </button>
     <button class="btn-ghost" onclick="logout()">로그아웃</button>
   </div>
 </nav>
@@ -526,7 +653,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
         <div class="landing-logo">GongGoo</div>
         <div class="landing-tagline">KSA 학생들을 위한 공동구매 플랫폼</div>
         <p class="landing-sub">같이 사면 더 싸고, 같이 모으면 더 빠릅니다.<br>원하는 공동구매를 직접 열거나, 마음에 드는 구매에 참여해보세요.</p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <div class="landing-cta" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
           <button class="btn-primary" style="padding:12px 32px;font-size:15px" onclick="switchView('home')">🔍 공동구매 둘러보기</button>
           <button class="btn-secondary" style="padding:12px 28px;font-size:15px" onclick="openCreate()">✏️ 공구 올리기</button>
         </div>

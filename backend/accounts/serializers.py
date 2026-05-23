@@ -1,14 +1,15 @@
 from rest_framework import serializers
 from django.conf import settings
-from .models import User
+from .models import User, EmailVerification
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    verification_code = serializers.CharField(write_only=True, max_length=6, min_length=6)
 
     class Meta:
         model = User
-        fields = ["email", "password", "name", "student_id", "phone_number"]
+        fields = ["email", "password", "name", "student_id", "phone_number", "verification_code"]
 
     def validate_email(self, value):
         domain = value.split("@")[-1]
@@ -18,8 +19,34 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate(self, data):
+        email = data.get("email")
+        code = data.pop("verification_code")  # DB에는 저장하지 않으므로 제거
+
+        try:
+            verification = EmailVerification.objects.get(
+                email=email, code=code, is_used=False
+            )
+        except EmailVerification.DoesNotExist:
+            raise serializers.ValidationError(
+                {"verification_code": "인증코드가 올바르지 않습니다."}
+            )
+
+        if verification.is_expired():
+            raise serializers.ValidationError(
+                {"verification_code": "인증코드가 만료되었습니다. 다시 요청해주세요."}
+            )
+
+        # create()에서 사용할 수 있도록 임시 보관
+        self._verification = verification
+        return data
+
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        user = User.objects.create_user(**validated_data)
+        # 사용 완료 처리 (재사용 방지)
+        self._verification.is_used = True
+        self._verification.save(update_fields=["is_used"])
+        return user
 
 
 class UserSerializer(serializers.ModelSerializer):

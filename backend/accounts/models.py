@@ -1,6 +1,10 @@
+import random
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -47,3 +51,29 @@ class User(AbstractBaseUser, PermissionsMixin):
             raise ValidationError(
                 f"학교 이메일(@{settings.SCHOOL_EMAIL_DOMAIN})만 사용 가능합니다."
             )
+
+
+class EmailVerification(models.Model):
+    """회원가입 시 이메일 인증코드 임시 저장 테이블"""
+
+    email = models.EmailField(verbose_name="이메일")
+    code = models.CharField(max_length=6, verbose_name="인증코드")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False, verbose_name="사용 여부")
+
+    CODE_EXPIRY_MINUTES = 10  # 인증코드 유효 시간(분)
+
+    class Meta:
+        verbose_name = "이메일 인증"
+        verbose_name_plural = "이메일 인증 목록"
+
+    def __str__(self):
+        return f"{self.email} – {self.code}"
+
+    @staticmethod
+    def generate_code() -> str:
+        """6자리 랜덤 숫자 문자열 반환 (앞자리 0 보존)"""
+        return f"{random.randint(0, 999999):06d}"
+
+    def is_expired(self) -> bool:
+        return timezone.now() > self.created_at + timedelta(minutes=self.CODE_EXPIRY_MINUTES)

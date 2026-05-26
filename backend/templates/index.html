@@ -26,6 +26,40 @@
   --shadow: 0 2px 10px rgba(0,0,0,0.06);
   --shadow-hover: 0 6px 24px rgba(0,0,0,0.11);
 }
+[data-theme="dark"] {
+  --bg: #0f0f12;
+  --surface: #1a1a20;
+  --surface2: #24242c;
+  --border: #2e2e3a;
+  --text: #eeeef2;
+  --text2: #8f8fa0;
+  --text3: #56566a;
+  --shadow: 0 2px 10px rgba(0,0,0,0.3);
+  --shadow-hover: 0 6px 24px rgba(0,0,0,0.45);
+}
+[data-theme="dark"] nav {
+  background: rgba(26,26,32,0.92);
+}
+[data-theme="dark"] .form-input:focus { background: #1e1e26; }
+[data-theme="dark"] .login-overlay { background: var(--bg); }
+
+/* ── 테마 토글 스위치 ── */
+.theme-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; padding: 4px 0;
+}
+.theme-toggle-switch {
+  width: 52px; height: 28px; border-radius: 14px;
+  background: var(--border); border: none; position: relative;
+  cursor: pointer; transition: background .25s; padding: 0; flex-shrink: 0;
+}
+.theme-toggle-switch.dark { background: var(--accent); }
+.theme-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; transition: transform .25s; display: block; pointer-events: none;
+}
+.theme-toggle-switch.dark .theme-knob { transform: translateX(24px); }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
@@ -877,6 +911,17 @@ textarea.form-input { resize: vertical; min-height: 90px; }
         <button class="btn-primary settings-btn" onclick="changePassword()">비밀번호 변경</button>
       </div>
 
+      <!-- 테마 설정 카드 -->
+      <div class="settings-card">
+        <div class="settings-card-title">🎨 화면 설정</div>
+        <div class="theme-toggle-row">
+          <span style="font-size:14px;color:var(--text2)" id="theme-label">라이트 모드</span>
+          <button class="theme-toggle-switch" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="테마 전환">
+            <span class="theme-knob"></span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1015,6 +1060,26 @@ let currentDetail = null;   // 현재 열려 있는 상세 데이터 (참여 경
 let detailWS = null;
 let similarityConfirmed = false;   // 유사상품 경고를 확인하고 강행 여부
 let extTimerInterval = null;       // EXTENDING 남은시간 카운트다운 타이머
+
+/* ===== 테마 (다크/라이트) ===== */
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn   = document.getElementById('theme-toggle-btn');
+  const label = document.getElementById('theme-label');
+  if (btn)   btn.classList.toggle('dark', dark);
+  if (label) label.textContent = dark ? '🌙 다크 모드' : '☀️ 라이트 모드';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  localStorage.setItem('gonggoo_theme', isDark ? 'light' : 'dark');
+  applyTheme(!isDark);
+}
+// 페이지 로드 시 저장된 테마 즉시 적용 (시스템 설정 우선 → 저장값 우선)
+(function initTheme() {
+  const saved = localStorage.getItem('gonggoo_theme');
+  const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved ? saved === 'dark' : sysDark);
+})();
 
 const CAT_LABEL = {
   택시:'🚕 택시', 해외직구:'✈️ 해외직구', 정기결제:'🔄 정기결제',
@@ -2002,6 +2067,8 @@ function loadSettingsForm() {
   document.getElementById('s-name').value       = ME.name       || '';
   document.getElementById('s-student-id').value = ME.student_id || '';
   document.getElementById('s-phone').value      = ME.phone_number || '';
+  // 테마 토글 상태 동기화
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark');
   // 메시지·비밀번호 입력 초기화
   ['profile-msg','pw-msg'].forEach(id => {
     const el = document.getElementById(id);

@@ -370,6 +370,30 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 .login-tab.active { background: rgba(255,107,53,.1); color: var(--accent); border-color: var(--accent); }
 .login-hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 14px; }
 
+/* ── 내 공구 탭 ── */
+.mine-section-title {
+  font-size: 14px; font-weight: 700; color: var(--text2);
+  margin: 20px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.mine-section-title:first-of-type { margin-top: 4px; }
+
+/* ── N분의 1 계산기 ── */
+.split-calc-toggle {
+  font-size: 13px; color: var(--accent); cursor: pointer;
+  padding: 9px 13px; border: 1.5px dashed rgba(255,107,53,.4);
+  border-radius: 8px; user-select: none; transition: background .15s;
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 600;
+}
+.split-calc-toggle:hover { background: rgba(255,107,53,.06); }
+.split-calc-body {
+  margin-top: 10px; padding: 14px;
+  background: var(--surface2); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.split-result { font-size: 13px; color: var(--accent); font-weight: 700; margin-top: 10px; min-height: 20px; }
+
 /* ════════════════════════════════════════
    모바일 반응형  (≤ 768px)
    ════════════════════════════════════════ */
@@ -626,6 +650,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
   <div class="nav-tabs">
     <button class="nav-tab active" id="nav-landing" onclick="switchView('landing')">🏠 홈</button>
     <button class="nav-tab" id="nav-home" onclick="switchView('home')">🛒 공동구매</button>
+    <button class="nav-tab" id="nav-mine" onclick="switchView('mine')">👤 내 공구</button>
     <button class="nav-tab" id="nav-matched" onclick="switchView('matched')">
       🎉 모집됨<span class="badge" id="badge-matched" style="display:none">0</span>
     </button>
@@ -768,6 +793,18 @@ textarea.form-input { resize: vertical; min-height: 90px; }
     </div>
 
     <div class="grid" id="card-grid"></div>
+  </div>
+
+  <!-- ── 내 공구 뷰 ── -->
+  <div id="view-mine" class="view">
+    <div class="section-header">
+      <h2>👤 내 공구</h2>
+      <p>내가 개설하거나 참여 중인 공동구매 목록입니다.</p>
+    </div>
+    <div class="mine-section-title">✏️ 내가 개설한 공구</div>
+    <div class="grid" id="mine-created-grid"></div>
+    <div class="mine-section-title">🙋 내가 참여 중인 공구</div>
+    <div class="grid" id="mine-joined-grid"></div>
   </div>
 
   <!-- ── 모집됨 뷰 ── -->
@@ -919,6 +956,28 @@ textarea.form-input { resize: vertical; min-height: 90px; }
           <input type="text" class="form-input" id="f-unit" placeholder="800">
         </div>
       </div>
+      <!-- N분의 1 자동계산 -->
+      <div class="form-group" style="margin-top:14px">
+        <div class="split-calc-toggle" onclick="toggleSplitCalc()">
+          🧮 N분의 1 자동계산 <span id="split-toggle-icon">▼</span>
+        </div>
+        <div id="split-calc-body" class="split-calc-body" style="display:none">
+          <div class="form-row" style="margin-bottom:0">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">총 금액 (원)</label>
+              <input type="text" class="form-input" id="f-split-total" placeholder="예: 30000" oninput="calcSplit()">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">인원 수 (명)</label>
+              <input type="text" class="form-input" id="f-split-n" placeholder="예: 3" oninput="calcSplit()">
+            </div>
+          </div>
+          <div class="split-result" id="split-result"></div>
+          <button type="button" class="btn-ghost btn-sm" id="split-apply-btn"
+            style="display:none;margin-top:6px" onclick="applySplit()">📋 개당 가격에 적용</button>
+        </div>
+      </div>
+
       <div class="form-group" id="myqty-group" style="margin-top:18px">
         <label class="form-label" id="myqty-label">내가 살 개수 <span>*</span></label>
         <input type="text" class="form-input" id="f-myqty" placeholder="1">
@@ -1132,6 +1191,7 @@ async function afterAuth() {
 }
 
 function logout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
   TOKEN = ''; REFRESH = ''; ME = null;
   localStorage.removeItem('gonggoo_access');
   localStorage.removeItem('gonggoo_refresh');
@@ -1145,12 +1205,13 @@ function logout() {
 /* ===== 뷰 전환 ===== */
 function switchView(view) {
   currentView = view;
-  ['landing', 'home', 'matched', 'done', 'settings'].forEach(v => {
+  ['landing', 'home', 'mine', 'matched', 'done', 'settings'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
     document.getElementById('nav-' + v).classList.toggle('active', v === view);
   });
+  if (view === 'mine')    renderMineView();
   if (view === 'matched') renderMatchedGrid();
-  if (view === 'done') renderDoneGrid();
+  if (view === 'done')    renderDoneGrid();
   if (view === 'settings') loadSettingsForm();
 }
 
@@ -1218,8 +1279,9 @@ async function loadMyBuys() {
       done:     (data.done     || []).map(normalize),
     };
     updateMatchedBadge();
+    if (currentView === 'mine')    renderMineView();
     if (currentView === 'matched') renderMatchedGrid();
-    if (currentView === 'done') renderDoneGrid();
+    if (currentView === 'done')    renderDoneGrid();
   } catch (e) {}
 }
 
@@ -1298,6 +1360,22 @@ function renderHome() {
     return;
   }
   grid.innerHTML = list.map(p => buildCard(p, false)).join('');
+}
+
+/* ===== 내 공구 렌더링 ===== */
+function renderMineView() {
+  const createdGrid = document.getElementById('mine-created-grid');
+  const joinedGrid  = document.getElementById('mine-joined-grid');
+
+  const EMPTY_C = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📭</div>개설한 공동구매가 없습니다.</div>';
+  const EMPTY_J = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>참여 중인 공동구매가 없습니다.</div>';
+
+  createdGrid.innerHTML = myBuys.created.length
+    ? myBuys.created.map(p => buildCard(p, false)).join('')
+    : EMPTY_C;
+  joinedGrid.innerHTML = myBuys.joined.length
+    ? myBuys.joined.map(p => buildCard(p, false)).join('')
+    : EMPTY_J;
 }
 
 /* ===== 모집됨 렌더링 ===== */
@@ -1700,11 +1778,51 @@ function closeWS() {
   if (detailWS) { try { detailWS.close(); } catch (e) {} detailWS = null; }
 }
 
+/* ===== N분의 1 계산기 ===== */
+let splitCalcOpen = false;
+let splitPerPerson = 0;
+
+function toggleSplitCalc() {
+  splitCalcOpen = !splitCalcOpen;
+  document.getElementById('split-calc-body').style.display = splitCalcOpen ? 'block' : 'none';
+  document.getElementById('split-toggle-icon').textContent = splitCalcOpen ? '▲' : '▼';
+}
+
+function calcSplit() {
+  const total = parseInt((val('f-split-total') || '0').replace(/,/g, '')) || 0;
+  const n = parseInt(val('f-split-n')) || 0;
+  const resultEl = document.getElementById('split-result');
+  const applyBtn = document.getElementById('split-apply-btn');
+  if (total > 0 && n >= 2) {
+    splitPerPerson = Math.ceil(total / n);
+    resultEl.textContent = `1인당 ${fmt(splitPerPerson)}원  (${fmt(total)}원 ÷ ${n}명)`;
+    applyBtn.style.display = '';
+  } else {
+    splitPerPerson = 0;
+    resultEl.textContent = total > 0 && n === 1 ? '인원 수를 2명 이상 입력하세요.' : '';
+    applyBtn.style.display = 'none';
+  }
+}
+
+function applySplit() {
+  if (!splitPerPerson) return;
+  document.getElementById('f-unit').value = splitPerPerson;
+  document.getElementById('f-unit').dispatchEvent(new Event('input'));
+  toast(`개당 가격에 ${fmt(splitPerPerson)}원을 적용했어요.`, 'success');
+}
+
 /* ===== 공구 올리기 ===== */
 function openCreate() {
-  ['f-title','f-desc','f-item-url','f-goal','f-unit','f-myqty','f-deadline'].forEach(id =>
+  ['f-title','f-desc','f-item-url','f-goal','f-unit','f-myqty','f-deadline',
+   'f-split-total','f-split-n'].forEach(id =>
     document.getElementById(id).value = '');
   document.getElementById('f-deadline').min = new Date().toISOString().slice(0, 10);
+  // N분의1 계산기 초기화
+  splitCalcOpen = false; splitPerPerson = 0;
+  document.getElementById('split-calc-body').style.display = 'none';
+  document.getElementById('split-toggle-icon').textContent = '▼';
+  document.getElementById('split-result').textContent = '';
+  document.getElementById('split-apply-btn').style.display = 'none';
   selectedEmoji = '🛍️';
   setType('최소주문금액');
   renderEmojiPicker();

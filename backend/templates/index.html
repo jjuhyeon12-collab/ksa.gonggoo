@@ -957,7 +957,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
         </div>
       </div>
       <!-- N분의 1 자동계산 -->
-      <div class="form-group" style="margin-top:14px">
+      <div class="form-group" id="split-calc-wrap" style="margin-top:14px">
         <div class="split-calc-toggle" onclick="toggleSplitCalc()">
           🧮 N분의 1 자동계산 <span id="split-toggle-icon">▼</span>
         </div>
@@ -1880,6 +1880,15 @@ function setType(t) {
     document.getElementById('myqty-label').innerHTML = '내가 살 개수 <span>*</span>';
     document.getElementById('f-myqty').placeholder = '1';
     document.getElementById('myqty-hint').textContent = '개설자도 공동구매에 함께 참여합니다.';
+  }
+
+  // N분의 1 계산기: 개수 기반(묶음·단체할인)일 때만 표시
+  document.getElementById('split-calc-wrap').style.display = countBased ? '' : 'none';
+  // 최소주문금액으로 전환 시 계산기가 열려있었으면 닫기
+  if (!countBased && splitCalcOpen) {
+    splitCalcOpen = false;
+    document.getElementById('split-calc-body').style.display = 'none';
+    document.getElementById('split-toggle-icon').textContent = '▼';
   }
 }
 

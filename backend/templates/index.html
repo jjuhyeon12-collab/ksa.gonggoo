@@ -60,6 +60,19 @@
 }
 .theme-toggle-switch.dark .theme-knob { transform: translateX(24px); }
 
+/* ── 단체할인 가격 입력 방식 토글 ── */
+.gd-mode-btn {
+  font-size: 12px; font-weight: 600; padding: 4px 14px;
+  border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--surface2); color: var(--text2);
+  cursor: pointer; transition: all .15s;
+}
+.gd-mode-btn.active {
+  background: rgba(255,107,53,.1); color: var(--accent);
+  border-color: var(--accent);
+}
+.gd-mode-btn:hover:not(.active) { color: var(--text); border-color: var(--text3); }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
@@ -1001,6 +1014,11 @@ textarea.form-input { resize: vertical; min-height: 90px; }
         </div>
         <div class="form-group" id="unit-price-group" style="margin:0">
           <label class="form-label" id="unit-label">개당 가격 (원) <span>*</span></label>
+          <!-- 단체할인 전용: 가격 입력 방식 선택 -->
+          <div id="gd-price-mode-row" style="display:none;gap:6px;margin:5px 0 7px">
+            <button type="button" class="gd-mode-btn active" id="gd-mode-total" onclick="setGdPriceMode('total')">전체 가격</button>
+            <button type="button" class="gd-mode-btn" id="gd-mode-per" onclick="setGdPriceMode('per')">개당 가격</button>
+          </div>
           <input type="text" class="form-input" id="f-unit" placeholder="800" oninput="updateGroupDiscountHint()">
         </div>
       </div>
@@ -1931,6 +1949,9 @@ function stopPolling() {
 let splitCalcOpen = false;
 let splitPerPerson = 0;
 
+/* ===== 단체할인 가격 입력 방식 ('total' | 'per') ===== */
+let gdPriceMode = 'total';
+
 function toggleSplitCalc() {
   splitCalcOpen = !splitCalcOpen;
   document.getElementById('split-calc-body').style.display = splitCalcOpen ? 'block' : 'none';
@@ -2015,10 +2036,17 @@ function setType(t) {
   const goalRow   = document.getElementById('goal-unit-row');
   unitGroup.style.display = countBased ? '' : 'none';
   goalRow.style.gridTemplateColumns = countBased ? '1fr 1fr' : '1fr';
+  // 가격 입력 방식 토글 (단체할인 전용)
+  const modeRow = document.getElementById('gd-price-mode-row');
+  modeRow.style.display = discount ? 'flex' : 'none';
   if (bulk) {
     document.getElementById('unit-label').innerHTML = '개당 가격 (원) <span>*</span>';
     document.getElementById('f-unit').placeholder = '800';
   } else if (discount) {
+    // 단체할인: 모드를 '전체 가격'으로 초기화
+    gdPriceMode = 'total';
+    document.getElementById('gd-mode-total').classList.add('active');
+    document.getElementById('gd-mode-per').classList.remove('active');
     document.getElementById('unit-label').innerHTML = '전체 가격 (원) <span>*</span>';
     document.getElementById('f-unit').placeholder = '50000';
   }
@@ -2050,14 +2078,34 @@ function setType(t) {
   }
 }
 
+/* ===== 단체할인 가격 입력 방식 전환 ===== */
+function setGdPriceMode(mode) {
+  gdPriceMode = mode;
+  document.getElementById('gd-mode-total').classList.toggle('active', mode === 'total');
+  document.getElementById('gd-mode-per').classList.toggle('active', mode === 'per');
+  if (mode === 'total') {
+    document.getElementById('unit-label').innerHTML = '전체 가격 (원) <span>*</span>';
+    document.getElementById('f-unit').placeholder = '50000';
+  } else {
+    document.getElementById('unit-label').innerHTML = '개당 가격 (원) <span>*</span>';
+    document.getElementById('f-unit').placeholder = '5000';
+  }
+  document.getElementById('f-unit').value = '';
+  updateGroupDiscountHint();
+}
+
 /* ===== 단체할인 1인당 가격 힌트 ===== */
 function updateGroupDiscountHint() {
   if (currentType !== '단체할인') return;
-  const total = parseInt((val('f-unit') || '0').replace(/,/g, '')) || 0;
+  const raw = parseInt((val('f-unit') || '0').replace(/,/g, '')) || 0;
   const count = parseInt(val('f-goal')) || 0;
   const hint = document.getElementById('group-discount-hint');
-  if (total > 0 && count > 0) {
-    hint.textContent = '→ 1인당 ' + fmt(Math.ceil(total / count)) + '원  (' + fmt(total) + '원 ÷ ' + count + '명)';
+  if (raw > 0 && count > 0) {
+    if (gdPriceMode === 'total') {
+      hint.textContent = '→ 1인당 ' + fmt(Math.ceil(raw / count)) + '원  (' + fmt(raw) + '원 ÷ ' + count + '명)';
+    } else {
+      hint.textContent = '→ 전체 ' + fmt(raw * count) + '원  (' + fmt(raw) + '원 × ' + count + '명)';
+    }
   } else {
     hint.textContent = '';
   }
@@ -2125,7 +2173,9 @@ async function submitPost() {
   if (!goal || goal <= 0) { toast(isMinOrderType ? '목표 금액을 입력해주세요.' : '목표 개수를 입력해주세요.', 'error'); return; }
   const isGroupDiscount = currentType === '단체할인';
   if (!isMinOrderType && (!unit || unit <= 0)) {
-    toast(isGroupDiscount ? '전체 가격을 입력해주세요.' : '개당 가격을 입력해주세요.', 'error'); return;
+    let msg = '개당 가격을 입력해주세요.';
+    if (isGroupDiscount) msg = gdPriceMode === 'total' ? '전체 가격을 입력해주세요.' : '개당 가격을 입력해주세요.';
+    toast(msg, 'error'); return;
   }
   if (!myqty || myqty <= 0) { toast(isMinOrderType ? '내가 낼 금액을 입력해주세요.' : '내가 살 수량을 입력해주세요.', 'error'); return; }
   if (isMinOrderType && myqty < 100) { toast('최소 100원 이상 입력해주세요.', 'error'); return; }
@@ -2154,8 +2204,12 @@ async function submitPost() {
   if (itemUrl) body.item_url = itemUrl;
   if (buyType === 'bundle' || buyType === 'group_discount') {
     body.total_count = goal;
-    // 단체할인: f-unit은 전체 가격 → 1인당 가격으로 변환해서 전송
-    body.unit_price = buyType === 'group_discount' ? Math.ceil(unit / goal) : unit;
+    // 단체할인: 입력 방식에 따라 unit_price 결정
+    //   전체 가격(total): 전체 ÷ 목표 인원 → 1인당 가격
+    //   개당 가격(per):   그대로 1인당 가격
+    body.unit_price = buyType === 'group_discount'
+      ? (gdPriceMode === 'total' ? Math.ceil(unit / goal) : unit)
+      : unit;
   } else {
     // 최소주문금액 모으기: 목표 금액만 필요, unit_price 는 서버에서 1로 설정
     // creator_quantity = 개설자가 낼 금액(원)

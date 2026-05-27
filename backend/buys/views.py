@@ -23,14 +23,19 @@ PUBLIC_STATUSES = [GroupBuy.Status.OPEN, GroupBuy.Status.EXTENDING]
 
 class GroupBuyListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/buys/  - 공동구매 목록 (open + extending만 공개)
-    POST /api/buys/  - 공동구매 개설
+    GET  /api/buys/  - 공동구매 목록 (비회원도 조회 가능)
+    POST /api/buys/  - 공동구매 개설 (로그인 필요)
     """
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = GroupBuyFilter
     search_fields = ["title", "description"]
     ordering_fields = ["created_at", "deadline", "unit_price"]
     ordering = ["-created_at"]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         return (
@@ -66,6 +71,8 @@ class GroupBuyDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = GroupBuyDetailSerializer
 
     def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
     def retrieve(self, request, *args, **kwargs):

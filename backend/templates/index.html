@@ -648,7 +648,7 @@ textarea.form-input { resize: vertical; min-height: 90px; }
 <body>
 
 <!-- 로그인 / 회원가입 오버레이 -->
-<div class="login-overlay" id="login-overlay">
+<div class="login-overlay hidden" id="login-overlay">
   <div class="login-card">
     <div class="logo">GongGoo</div>
     <div class="login-sub">KSA 학생 공동구매 플랫폼</div>
@@ -692,12 +692,15 @@ textarea.form-input { resize: vertical; min-height: 90px; }
     <button class="nav-tab" id="nav-settings" onclick="switchView('settings')">⚙️ 설정</button>
   </div>
   <div class="nav-right">
-    <div class="nav-user" id="nav-user">로딩 중...</div>
-    <button class="btn-primary btn-sm" onclick="openCreate()">
+    <!-- 비로그인 상태 -->
+    <button class="btn-primary btn-sm" id="nav-login-btn" onclick="requireLogin()" style="display:none">로그인</button>
+    <!-- 로그인 상태 -->
+    <div class="nav-user" id="nav-user" style="display:none"></div>
+    <button class="btn-primary btn-sm" id="nav-create-btn" onclick="openCreate()" style="display:none">
       <span class="btn-text-full">+ 공구 올리기</span>
       <span class="btn-text-short" style="display:none">+</span>
     </button>
-    <button class="btn-ghost" onclick="logout()">로그아웃</button>
+    <button class="btn-ghost" id="nav-logout-btn" onclick="logout()" style="display:none">로그아웃</button>
   </div>
 </nav>
 
@@ -1063,6 +1066,38 @@ let pollInterval = null;           // 30초 목록 폴링 타이머
 let similarityConfirmed = false;   // 유사상품 경고를 확인하고 강행 여부
 let extTimerInterval = null;       // EXTENDING 남은시간 카운트다운 타이머
 
+/* ===== 비로그인 / 로그인 상태 전환 ===== */
+function requireLogin() {
+  document.getElementById('login-overlay').classList.remove('hidden');
+  switchAuth('login');
+}
+
+const AUTH_ONLY_VIEWS = ['mine', 'matched', 'done', 'settings'];
+
+function setGuestMode() {
+  // 로그인 버튼만 표시
+  document.getElementById('nav-login-btn').style.display   = '';
+  document.getElementById('nav-user').style.display        = 'none';
+  document.getElementById('nav-create-btn').style.display  = 'none';
+  document.getElementById('nav-logout-btn').style.display  = 'none';
+  // 로그인 전용 탭 숨기기
+  AUTH_ONLY_VIEWS.forEach(v => {
+    document.getElementById('nav-' + v).style.display = 'none';
+  });
+}
+
+function setUserMode() {
+  // 로그인 버튼 숨기고 사용자 정보 표시
+  document.getElementById('nav-login-btn').style.display   = 'none';
+  document.getElementById('nav-user').style.display        = '';
+  document.getElementById('nav-create-btn').style.display  = '';
+  document.getElementById('nav-logout-btn').style.display  = '';
+  // 모든 탭 표시
+  AUTH_ONLY_VIEWS.forEach(v => {
+    document.getElementById('nav-' + v).style.display = '';
+  });
+}
+
 /* ===== 테마 (다크/라이트) ===== */
 function applyTheme(dark) {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -1254,6 +1289,7 @@ async function afterAuth() {
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('nav-user').innerHTML =
     '<strong>' + esc(ME.student_id) + '</strong> ' + esc(ME.name);
+  setUserMode();
   await Promise.all([loadPosts(), loadMyBuys()]);
   startPolling();   // 30초마다 목록 자동 갱신
 }
@@ -1262,6 +1298,7 @@ function logout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
   stopPolling();
   TOKEN = ''; REFRESH = ''; ME = null;
+  setGuestMode();
   localStorage.removeItem('gonggoo_access');
   localStorage.removeItem('gonggoo_refresh');
   closeWS();
@@ -1273,6 +1310,8 @@ function logout() {
 
 /* ===== 뷰 전환 ===== */
 function switchView(view) {
+  // 비로그인 상태에서 로그인 전용 뷰 접근 시 로그인 화면으로
+  if (!ME && AUTH_ONLY_VIEWS.includes(view)) { requireLogin(); return; }
   currentView = view;
   ['landing', 'home', 'mine', 'matched', 'done', 'settings'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('active', v === view);
@@ -1727,6 +1766,7 @@ function renderDetailModal(d) {
 
 /* ===== 참여 / 취소 / 완료 ===== */
 async function joinPost(id, fixedQty) {
+  if (!ME) { requireLogin(); return; }   // 비로그인: 로그인 페이지로
   const amt = fixedQty !== undefined
     ? fixedQty
     : parseInt(document.getElementById('join-amount').value);
@@ -1832,6 +1872,7 @@ function clearExtTimer() {
 
 /* ===== WebSocket (재연결 포함) ===== */
 function connectWS(id) {
+  if (!ME) return;   // 비로그인: WS 불필요
   closeWS();
   try {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -1917,6 +1958,7 @@ function applySplit() {
 
 /* ===== 공구 올리기 ===== */
 function openCreate() {
+  if (!ME) { requireLogin(); return; }   // 비로그인: 로그인 페이지로
   ['f-title','f-desc','f-item-url','f-goal','f-unit','f-myqty','f-deadline',
    'f-split-total','f-split-n'].forEach(id =>
     document.getElementById(id).value = '');
@@ -2202,7 +2244,9 @@ document.getElementById('reg-password').addEventListener('keydown', e => {
   if (TOKEN) {
     await afterAuth();
   } else {
-    document.getElementById('login-overlay').classList.remove('hidden');
+    // 비로그인: 로그인 오버레이 없이 목록만 공개
+    setGuestMode();
+    await loadPosts();
   }
 })();
 </script>

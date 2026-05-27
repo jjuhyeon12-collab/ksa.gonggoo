@@ -1058,6 +1058,8 @@ let currentType = '최소주문금액';
 let currentDetailId = null;
 let currentDetail = null;   // 현재 열려 있는 상세 데이터 (참여 경고 판단용)
 let detailWS = null;
+let wsReconnectTimer = null;       // WebSocket 재연결 타이머
+let pollInterval = null;           // 30초 목록 폴링 타이머
 let similarityConfirmed = false;   // 유사상품 경고를 확인하고 강행 여부
 let extTimerInterval = null;       // EXTENDING 남은시간 카운트다운 타이머
 
@@ -1253,10 +1255,12 @@ async function afterAuth() {
   document.getElementById('nav-user').innerHTML =
     '<strong>' + esc(ME.student_id) + '</strong> ' + esc(ME.name);
   await Promise.all([loadPosts(), loadMyBuys()]);
+  startPolling();   // 30초마다 목록 자동 갱신
 }
 
 function logout() {
   if (!confirm('로그아웃 하시겠습니까?')) return;
+  stopPolling();
   TOKEN = ''; REFRESH = ''; ME = null;
   localStorage.removeItem('gonggoo_access');
   localStorage.removeItem('gonggoo_refresh');
@@ -1826,21 +1830,56 @@ function clearExtTimer() {
   if (extTimerInterval) { clearInterval(extTimerInterval); extTimerInterval = null; }
 }
 
-/* ===== WebSocket ===== */
+/* ===== WebSocket (재연결 포함) ===== */
 function connectWS(id) {
   closeWS();
   try {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     detailWS = new WebSocket(
       proto + '://' + location.host + '/ws/buys/' + id + '/?token=' + TOKEN);
-    detailWS.onmessage = function () {
+
+    detailWS.onopen = function() {
+      console.log('[WS] 연결됨 buy_id=' + id);
+    };
+
+    detailWS.onmessage = function() {
+      // 상세 모달 + 목록 + 내 공구 동시 갱신
       refreshDetail();
       loadPosts();
+      loadMyBuys();
     };
+
+    detailWS.onclose = function(e) {
+      // 정상 종료(1000)·인증 실패(4001)가 아니면 3초 후 재연결
+      if (currentDetailId && e.code !== 1000 && e.code !== 4001) {
+        console.log('[WS] 연결 끊김 (' + e.code + '), 3초 후 재연결...');
+        wsReconnectTimer = setTimeout(() => connectWS(currentDetailId), 3000);
+      }
+    };
+
+    detailWS.onerror = function() { /* onclose가 이어서 처리 */ };
   } catch (e) {}
 }
+
 function closeWS() {
-  if (detailWS) { try { detailWS.close(); } catch (e) {} detailWS = null; }
+  clearTimeout(wsReconnectTimer);
+  wsReconnectTimer = null;
+  if (detailWS) {
+    try { detailWS.close(1000); } catch (e) {}
+    detailWS = null;
+  }
+}
+
+/* ===== 주기적 폴링 (30초) — WS 보조 수단 ===== */
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(() => {
+    loadPosts();
+    loadMyBuys();
+  }, 30000);
+}
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
 }
 
 /* ===== N분의 1 계산기 ===== */

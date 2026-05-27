@@ -997,13 +997,17 @@ textarea.form-input { resize: vertical; min-height: 90px; }
       <div id="goal-unit-row" class="form-row">
         <div class="form-group" style="margin:0">
           <label class="form-label" id="goal-label">목표 금액 (원) <span>*</span></label>
-          <input type="text" class="form-input" id="f-goal" placeholder="30000">
+          <input type="text" class="form-input" id="f-goal" placeholder="30000" oninput="updateGroupDiscountHint()">
         </div>
         <div class="form-group" id="unit-price-group" style="margin:0">
           <label class="form-label" id="unit-label">개당 가격 (원) <span>*</span></label>
-          <input type="text" class="form-input" id="f-unit" placeholder="800">
+          <input type="text" class="form-input" id="f-unit" placeholder="800" oninput="updateGroupDiscountHint()">
         </div>
       </div>
+      <!-- 단체할인: 1인당 가격 실시간 표시 -->
+      <div id="group-discount-hint" style="display:none;font-size:12px;font-weight:600;
+        color:var(--accent);margin-top:6px;padding:8px 12px;
+        background:rgba(255,107,53,.06);border-radius:6px"></div>
       <!-- N분의 1 자동계산 -->
       <div class="form-group" id="split-calc-wrap" style="margin-top:14px">
         <div class="split-calc-toggle" onclick="toggleSplitCalc()">
@@ -2011,10 +2015,18 @@ function setType(t) {
   const goalRow   = document.getElementById('goal-unit-row');
   unitGroup.style.display = countBased ? '' : 'none';
   goalRow.style.gridTemplateColumns = countBased ? '1fr 1fr' : '1fr';
-  if (countBased) {
+  if (bulk) {
     document.getElementById('unit-label').innerHTML = '개당 가격 (원) <span>*</span>';
-    document.getElementById('f-unit').placeholder = bulk ? '800' : '299000';
+    document.getElementById('f-unit').placeholder = '800';
+  } else if (discount) {
+    document.getElementById('unit-label').innerHTML = '전체 가격 (원) <span>*</span>';
+    document.getElementById('f-unit').placeholder = '50000';
   }
+
+  // 단체할인 1인당 힌트
+  const hintEl = document.getElementById('group-discount-hint');
+  hintEl.style.display = discount ? '' : 'none';
+  if (!discount) hintEl.textContent = '';
 
   // 개설자 참여 입력칸 (모든 유형에서 표시)
   document.getElementById('myqty-group').style.display = '';
@@ -2028,13 +2040,26 @@ function setType(t) {
     document.getElementById('myqty-hint').textContent = '개설자도 공동구매에 함께 참여합니다.';
   }
 
-  // N분의 1 계산기: 개수 기반(묶음·단체할인)일 때만 표시
-  document.getElementById('split-calc-wrap').style.display = countBased ? '' : 'none';
-  // 최소주문금액으로 전환 시 계산기가 열려있었으면 닫기
-  if (!countBased && splitCalcOpen) {
+  // N분의 1 계산기: 묶음 전용 (단체할인은 전체가격 직접 입력 + 힌트로 대체)
+  document.getElementById('split-calc-wrap').style.display = bulk ? '' : 'none';
+  // 묶음이 아닐 때 계산기가 열려있었으면 닫기
+  if (!bulk && splitCalcOpen) {
     splitCalcOpen = false;
     document.getElementById('split-calc-body').style.display = 'none';
     document.getElementById('split-toggle-icon').textContent = '▼';
+  }
+}
+
+/* ===== 단체할인 1인당 가격 힌트 ===== */
+function updateGroupDiscountHint() {
+  if (currentType !== '단체할인') return;
+  const total = parseInt((val('f-unit') || '0').replace(/,/g, '')) || 0;
+  const count = parseInt(val('f-goal')) || 0;
+  const hint = document.getElementById('group-discount-hint');
+  if (total > 0 && count > 0) {
+    hint.textContent = '→ 1인당 ' + fmt(Math.ceil(total / count)) + '원  (' + fmt(total) + '원 ÷ ' + count + '명)';
+  } else {
+    hint.textContent = '';
   }
 }
 
@@ -2098,7 +2123,10 @@ async function submitPost() {
   const isMinOrderType = currentType === '최소주문금액';
   if (!title) { toast('제목을 입력해주세요.', 'error'); return; }
   if (!goal || goal <= 0) { toast(isMinOrderType ? '목표 금액을 입력해주세요.' : '목표 개수를 입력해주세요.', 'error'); return; }
-  if (!isMinOrderType && (!unit || unit <= 0)) { toast('개당 가격을 입력해주세요.', 'error'); return; }
+  const isGroupDiscount = currentType === '단체할인';
+  if (!isMinOrderType && (!unit || unit <= 0)) {
+    toast(isGroupDiscount ? '전체 가격을 입력해주세요.' : '개당 가격을 입력해주세요.', 'error'); return;
+  }
   if (!myqty || myqty <= 0) { toast(isMinOrderType ? '내가 낼 금액을 입력해주세요.' : '내가 살 수량을 입력해주세요.', 'error'); return; }
   if (isMinOrderType && myqty < 100) { toast('최소 100원 이상 입력해주세요.', 'error'); return; }
   if (!deadline) { toast('마감일을 선택해주세요.', 'error'); return; }
@@ -2126,7 +2154,8 @@ async function submitPost() {
   if (itemUrl) body.item_url = itemUrl;
   if (buyType === 'bundle' || buyType === 'group_discount') {
     body.total_count = goal;
-    body.unit_price = unit;
+    // 단체할인: f-unit은 전체 가격 → 1인당 가격으로 변환해서 전송
+    body.unit_price = buyType === 'group_discount' ? Math.ceil(unit / goal) : unit;
   } else {
     // 최소주문금액 모으기: 목표 금액만 필요, unit_price 는 서버에서 1로 설정
     // creator_quantity = 개설자가 낼 금액(원)
